@@ -36,14 +36,14 @@ export class Application implements IApplication {
     async start(): Promise<void> {
         this.modulesOrdered = this.resolveOrder();
 
-        for (let i = 0; i < this.modulesOrdered.length; i++) {
-            await this.modulesOrdered[i].start(this.container);
+        for (const module of this.modulesOrdered) {
+            await module.start(this.container);
         }
     }
 
     async stop(): Promise<void> {
-        for (let i = this.modulesOrdered.length - 1; i >= 0; i--) {
-            await this.modulesOrdered[i].stop?.(this.container);
+        for (const module of [...this.modulesOrdered].reverse()) {
+            await module.stop?.(this.container);
         }
     }
 
