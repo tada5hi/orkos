@@ -5,14 +5,14 @@ import type { IModule } from '../../src';
 function createModule(
     name: string,
     opts: {
-        dependsOn?: string[];
+        dependencies?: string[];
         setupFn?: () => Promise<void>;
         teardownFn?: () => Promise<void>;
     } = {},
 ): IModule {
     return {
         name,
-        dependsOn: opts.dependsOn,
+        dependencies: opts.dependencies,
         async setup() {
             if (opts.setupFn) {
                 await opts.setupFn();
@@ -66,7 +66,7 @@ describe('Module Status Tracking', () => {
         it('should return a map of all module statuses', async () => {
             const app = new Application([
                 createModule('a'),
-                createModule('b', { dependsOn: ['a'] }),
+                createModule('b', { dependencies: ['a'] }),
             ]);
             await app.setup();
 
@@ -127,11 +127,11 @@ describe('Module Status Tracking', () => {
                     teardownFn: async () => { teardowns.push('a'); },
                 }),
                 createModule('b', {
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     teardownFn: async () => { teardowns.push('b'); },
                 }),
                 createModule('c', {
-                    dependsOn: ['b'],
+                    dependencies: ['b'],
                     setupFn: async () => { throw new Error('c failed'); },
                     teardownFn: async () => { teardowns.push('c'); },
                 }),
@@ -151,12 +151,12 @@ describe('Module Status Tracking', () => {
                     teardownFn: async () => { teardowns.push('a'); },
                 }),
                 createModule('b', {
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     setupFn: async () => { throw new Error('b failed'); },
                     teardownFn: async () => { teardowns.push('b'); },
                 }),
                 createModule('c', {
-                    dependsOn: ['b'],
+                    dependencies: ['b'],
                     teardownFn: async () => { teardowns.push('c'); },
                 }),
             ]);

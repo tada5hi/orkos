@@ -6,7 +6,7 @@ import type { IModule } from '../../src';
 function createModule(
     name: string,
     opts: {
-        dependsOn?: string[];
+        dependencies?: string[];
         onReady?: IModule['onReady'];
         onError?: IModule['onError'];
         setupFn?: (container: IContainer) => Promise<void>;
@@ -14,7 +14,7 @@ function createModule(
 ): IModule {
     return {
         name,
-        dependsOn: opts.dependsOn,
+        dependencies: opts.dependencies,
         async setup(container) {
             if (opts.setupFn) {
                 await opts.setupFn(container);
@@ -35,7 +35,7 @@ describe('Lifecycle Hooks', () => {
                     onReady: async () => { events.push('ready:a'); },
                 }),
                 createModule('b', {
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     setupFn: async () => { events.push('setup:b'); },
                     onReady: async () => { events.push('ready:b'); },
                 }),
@@ -114,7 +114,7 @@ describe('Lifecycle Hooks', () => {
             const app = new Application([
                 createModule('a', { onError: onErrorA }),
                 createModule('b', {
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     setupFn: async () => { throw new Error('b failed'); },
                     onError: onErrorB,
                 }),
@@ -169,13 +169,13 @@ describe('Lifecycle Hooks', () => {
                 },
                 {
                     name: 'b',
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     async setup() { events.push('setup:b'); },
                     async teardown() { events.push('teardown:b'); },
                 },
                 {
                     name: 'c',
-                    dependsOn: ['b'],
+                    dependencies: ['b'],
                     async setup() { throw new Error('c failed'); },
                     async teardown() { events.push('teardown:c'); },
                 },
@@ -200,13 +200,13 @@ describe('Lifecycle Hooks', () => {
                 },
                 {
                     name: 'b',
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     async setup() { /* ok */ },
                     async teardown() { throw new Error('teardown:b failed'); },
                 },
                 {
                     name: 'c',
-                    dependsOn: ['b'],
+                    dependencies: ['b'],
                     async setup() { throw new Error('setup:c failed'); },
                 },
             ]);
@@ -225,7 +225,7 @@ describe('Lifecycle Hooks', () => {
                 },
                 {
                     name: 'b',
-                    dependsOn: ['a'],
+                    dependencies: ['a'],
                     async setup() { throw new Error('fail'); },
                     async teardown() { teardowns.push('b'); },
                 },

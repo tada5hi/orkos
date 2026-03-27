@@ -8,8 +8,9 @@
 import type { IContainer } from 'eldin';
 import { Container } from 'eldin';
 import { ApplicationError } from './error.ts';
-import type { IApplication, IModule } from './types.ts';
-import {ModuleStatus} from './constants.ts';
+import { satisfies } from './semver.ts';
+import type { IApplication, IModule, ModuleDependency } from './types.ts';
+import { ModuleStatus } from './constants.ts';
 
 export class Application implements IApplication {
     public readonly container: IContainer;
@@ -112,16 +113,24 @@ export class Application implements IApplication {
 
         names.forEach((name) => {
             const module = this.modules.get(name)!;
-            if (!module.dependsOn) {
+            if (!module.dependencies) {
                 return;
             }
 
-            module.dependsOn.forEach((dep) => {
-                if (!registered.has(dep)) {
+            module.dependencies.forEach((raw) => {
+                const dep = this.normalizeDependency(raw);
+
+                if (!registered.has(dep.name)) {
+                    if (dep.optional) {
+                        return;
+                    }
+                    // non-optional missing deps are silently skipped (existing behavior)
                     return;
                 }
 
-                adjacency.get(dep)!.push(name);
+                this.validateDependencyVersion(module.name, dep);
+
+                adjacency.get(dep.name)!.push(name);
                 inDegree.set(name, inDegree.get(name)! + 1);
             });
         });
@@ -154,5 +163,36 @@ export class Application implements IApplication {
         }
 
         return sorted;
+    }
+
+    protected normalizeDependency(dep: string | ModuleDependency): ModuleDependency {
+        if (typeof dep === 'string') {
+            return { name: dep };
+        }
+
+        return dep;
+    }
+
+    protected validateDependencyVersion(moduleName: string, dep: ModuleDependency): void {
+        if (!dep.version) {
+            return;
+        }
+
+        const target = this.modules.get(dep.name);
+        if (!target) {
+            return;
+        }
+
+        if (!target.version) {
+            throw new ApplicationError(
+                `Module "${moduleName}" requires "${dep.name}" version ${dep.version}, but "${dep.name}" does not declare a version`,
+            );
+        }
+
+        if (!satisfies(target.version, dep.version)) {
+            throw new ApplicationError(
+                `Module "${moduleName}" requires "${dep.name}" version ${dep.version}, but version ${target.version} is registered`,
+            );
+        }
     }
 }

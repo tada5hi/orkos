@@ -8,9 +8,16 @@
 import type { IContainer } from 'eldin';
 import type { ModuleStatus } from './constants.ts';
 
+export interface ModuleDependency {
+    name: string;
+    version?: string;
+    optional?: boolean;
+}
+
 export interface IModule {
     readonly name: string;
-    readonly dependsOn?: string[];
+    readonly version?: string;
+    readonly dependencies?: (string | ModuleDependency)[];
 
     setup(container: IContainer): Promise<void>;
 
@@ -38,7 +45,7 @@ export type ModuleOptions = Record<string, unknown>;
 
 export interface ModuleDefinition<T extends ModuleOptions> {
     name: string;
-    dependsOn?: string[];
+    dependencies?: (string | ModuleDependency)[];
     defaults?: T;
     setup: (options: T, container: IContainer) => Promise<void>;
     teardown?: (options: T, container: IContainer) => Promise<void>;
