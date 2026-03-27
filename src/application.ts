@@ -36,19 +36,40 @@ export class Application implements IApplication {
     async start(): Promise<void> {
         this.modulesOrdered = this.resolveOrder();
 
+        const started: IModule[] = [];
         for (const module of this.modulesOrdered) {
-            await module.start(this.container);
+            try {
+                await module.start(this.container);
+                started.push(module);
+            } catch (error) {
+                try {
+                    await module.onError?.(error as Error, this.container);
+                } catch {
+                    // must not mask the original error
+                }
+
+                await this.stopModules(started);
+                throw error;
+            }
+        }
+
+        for (const module of this.modulesOrdered) {
+            await module.onReady?.(this.container);
         }
     }
 
     async stop(): Promise<void> {
-        for (const module of [...this.modulesOrdered].reverse()) {
-            await module.stop?.(this.container);
-        }
+        await this.stopModules(this.modulesOrdered);
     }
 
-    async reset(): Promise<void> {
-        // todo
+    protected async stopModules(modules: IModule[]): Promise<void> {
+        for (const module of [...modules].reverse()) {
+            try {
+                await module.stop?.(this.container);
+            } catch {
+                // individual stopModules failure must not prevent remaining modules from stopping
+            }
+        }
     }
 
     protected resolveOrder(): IModule[] {

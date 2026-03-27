@@ -14,6 +14,10 @@ export interface IModule {
     start(container: IContainer): Promise<void>;
 
     stop?(container: IContainer): Promise<void>;
+
+    onReady?(container: IContainer): Promise<void>;
+
+    onError?(error: Error, container: IContainer): Promise<void>;
 }
 
 export interface IApplication {
@@ -24,5 +28,4 @@ export interface IApplication {
 
     start(): Promise<void>;
     stop(): Promise<void>;
-    reset(): Promise<void>;
 }
