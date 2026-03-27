@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2025.
- * Author Peter Placzek (tada5hi)
- * For the full copyright and license information,
- * view the LICENSE file that was distributed with this source code.
+ * Copyright (c) 2025-2026.
+ *  Author Peter Placzek (tada5hi)
+ *  For the full copyright and license information,
+ *  view the LICENSE file that was distributed with this source code.
  */
 
-import type { IContainer } from 'eldin';
+import type {IContainer} from 'eldin';
+import type {ModuleStatus} from './constants.ts';
 
 export interface IModule {
     readonly name: string;
@@ -25,6 +26,9 @@ export interface IApplication {
 
     addModule(module: IModule): void;
     addModules(modules: IModule[]): void;
+
+    getModuleStatus(name: string): ModuleStatus;
+    getStatus(): Map<string, ModuleStatus>;
 
     setup(): Promise<void>;
     teardown(): Promise<void>;

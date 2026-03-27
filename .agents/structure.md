@@ -34,7 +34,7 @@ orkos/
 
 | File | Purpose |
 |------|---------|
-| `src/application.ts` | `Application` class — module registration, dependency resolution (Kahn's algorithm), lifecycle management (start/stop) |
+| `src/application.ts` | `Application` class — module registration, dependency resolution (Kahn's algorithm), lifecycle management (setup/teardown) |
 | `src/types.ts` | `IModule` and `IApplication` interfaces defining the module contract and application API |
 | `src/error.ts` | `ApplicationError` — thrown on circular dependency detection |
 | `src/index.ts` | Barrel export — the entire public API surface |
