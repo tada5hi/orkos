@@ -17,6 +17,7 @@ Define modules with dependencies, and orkos sets them up in the right order and 
 - [Modules](#modules)
 - [defineModule](#definemodule)
 - [Dependency Ordering](#dependency-ordering)
+- [Module Versioning](#module-versioning)
 - [Lifecycle Hooks](#lifecycle-hooks)
 - [Module Status](#module-status)
 - [Application API](#application-api)
@@ -27,7 +28,7 @@ Define modules with dependencies, and orkos sets them up in the right order and 
 ## Installation
 
 ```bash
-npm install orkos --save
+npm install orkos eldin --save
 ```
 
 ## Quick Start
@@ -47,7 +48,7 @@ class ConfigModule implements IModule {
 
 class DatabaseModule implements IModule {
     readonly name = 'database';
-    readonly dependsOn = ['config'];
+    readonly dependencies = ['config'];
 
     async setup(container: IContainer): Promise<void> {
         const config = container.resolve(ConfigToken);
@@ -64,7 +65,7 @@ class DatabaseModule implements IModule {
 
 class HttpModule implements IModule {
     readonly name = 'http';
-    readonly dependsOn = ['config', 'database'];
+    readonly dependencies = ['config', 'database'];
 
     async setup(container: IContainer): Promise<void> {
         const config = container.resolve(ConfigToken);
@@ -93,7 +94,8 @@ A module is any object implementing the `IModule` interface:
 ```typescript
 interface IModule {
     readonly name: string;
-    readonly dependsOn?: string[];
+    readonly version?: string;
+    readonly dependencies?: (string | ModuleDependency)[];
 
     setup(container: IContainer): Promise<void>;
     teardown?(container: IContainer): Promise<void>;
@@ -106,7 +108,8 @@ interface IModule {
 | Property | Description |
 |----------|-------------|
 | `name` | Unique identifier for the module |
-| `dependsOn` | Array of module names that must be set up before this one |
+| `version` | Optional semver version string |
+| `dependencies` | Array of module names or `ModuleDependency` objects |
 | `setup()` | Called during startup with the shared DI container |
 | `teardown()` | Optional cleanup, called during shutdown |
 | `onReady()` | Called after all modules have been set up successfully |
@@ -125,7 +128,7 @@ import { defineModule } from 'orkos';
 
 const CacheModule = defineModule<{ driver: 'memory' | 'redis'; ttl: number }>({
     name: 'cache',
-    dependsOn: ['config'],
+    dependencies: ['config'],
     defaults: { driver: 'memory', ttl: 3600 },
 
     async setup(options, container) {
@@ -182,9 +185,9 @@ orkos resolves module setup order using topological sort (Kahn's algorithm):
 
 ```typescript
 const app = new Application([
-    new HttpModule(),      // dependsOn: ['config', 'database']
+    new HttpModule(),      // dependencies: ['config', 'database']
     new ConfigModule(),    // no dependencies
-    new DatabaseModule(),  // dependsOn: ['config']
+    new DatabaseModule(),  // dependencies: ['config']
 ]);
 
 // Registration order doesn't matter — orkos resolves:
@@ -206,6 +209,59 @@ Circular dependencies are detected and throw an `ApplicationError`:
 ### Missing Dependencies
 
 If a module declares a dependency on a module that isn't registered, the dependency is silently skipped. This allows optional modules.
+
+## Module Versioning
+
+Modules can declare a `version` and use `ModuleDependency` objects to enforce semver constraints:
+
+```typescript
+import type { IModule } from 'orkos';
+
+class DatabaseModule implements IModule {
+    readonly name = 'database';
+    readonly version = '2.1.0';
+
+    async setup(container) { /* ... */ }
+}
+
+class AuthModule implements IModule {
+    readonly name = 'auth';
+    readonly version = '3.0.0';
+    readonly dependencies = [
+        'config',                                    // any version
+        { name: 'database', version: '>=2.0.0' },   // semver constraint
+        { name: 'ldap', optional: true },            // optional dependency
+    ];
+
+    async setup(container) { /* ... */ }
+}
+```
+
+### ModuleDependency
+
+```typescript
+interface ModuleDependency {
+    name: string;
+    version?: string;     // semver range (>=, >, <=, <, ~, ^, or exact)
+    optional?: boolean;   // skip silently when missing
+}
+```
+
+### Version Constraints
+
+| Range | Meaning |
+|-------|---------|
+| `>=2.0.0` | Version 2.0.0 or higher |
+| `>1.0.0` | Greater than 1.0.0 |
+| `^2.1.0` | Compatible with 2.1.0 (>=2.1.0 <3.0.0) |
+| `~2.1.0` | Patch-level changes (>=2.1.0 <2.2.0) |
+| `2.0.0` | Exact match |
+
+If a version constraint is not satisfied, `setup()` throws an `ApplicationError` with a descriptive message.
+
+### Optional Dependencies
+
+Dependencies with `optional: true` are silently skipped when the module isn't registered. When present, version constraints are still validated.
 
 ## Lifecycle Hooks
 
@@ -322,7 +378,7 @@ class ConfigModule implements IModule {
 
 class DatabaseModule implements IModule {
     readonly name = 'database';
-    readonly dependsOn = ['config'];
+    readonly dependencies = ['config'];
 
     async setup(container: IContainer) {
         // Type-safe resolution — no manual generics needed
