@@ -12,21 +12,21 @@ Every module implements `IModule`:
 interface IModule {
     readonly name: string;
     readonly dependsOn?: string[];
-    start(container: IContainer): Promise<void>;
-    stop?(container: IContainer): Promise<void>;
+    setup(container: IContainer): Promise<void>;
+    teardown?(container: IContainer): Promise<void>;
 }
 ```
 
 - `name` — unique identifier for dependency references
-- `dependsOn` — array of module names that must start before this module
-- `start()` — receives the shared DI container; called in dependency order
-- `stop()` — optional cleanup; called in reverse dependency order
+- `dependsOn` — array of module names that must be set up before this module
+- `setup()` — receives the shared DI container; called in dependency order
+- `teardown()` — optional cleanup; called in reverse dependency order
 
 ### Application Lifecycle
 
 ```
-addModule(s) → start() → resolveOrder() → sequential start per module
-                                        → stop() → reverse-order stop per module
+addModule(s) → setup() → resolveOrder() → sequential setup per module
+                                        → teardown() → reverse-order teardown per module
 ```
 
 1. **Registration** — Modules stored in a `Map<string, IModule>` for O(1) lookup
@@ -35,18 +35,18 @@ addModule(s) → start() → resolveOrder() → sequential start per module
    - Seed queue with zero-in-degree modules
    - Process queue, decrementing dependents' in-degrees
    - If sorted count < total modules, throw `ApplicationError` (circular dependency)
-3. **Start** — Iterate resolved order sequentially, calling `module.start(container)`
-4. **Stop** — Iterate resolved order in reverse, calling `module.stop(container)`
+3. **Setup** — Iterate resolved order sequentially, calling `module.setup(container)`
+4. **Teardown** — Iterate resolved order in reverse, calling `module.teardown(container)`
 
 ### Dependency Injection Integration
 
-The `Application` class wraps an `eldin` `Container` instance. The same container is passed to every module's `start()` and `stop()`, allowing modules to register and resolve services through a shared DI context.
+The `Application` class wraps an `eldin` `Container` instance. The same container is passed to every module's `setup()` and `teardown()`, allowing modules to register and resolve services through a shared DI context.
 
 ```typescript
 const app = new Application();
 app.addModule(databaseModule);   // registers DB connection in container
 app.addModule(httpModule);       // resolves DB from container, dependsOn: ['database']
-await app.start();
+await app.setup();
 ```
 
 ### Unimplemented
