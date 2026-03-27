@@ -11,9 +11,9 @@ export interface IModule {
     readonly name: string;
     readonly dependsOn?: string[];
 
-    start(container: IContainer): Promise<void>;
+    setup(container: IContainer): Promise<void>;
 
-    stop?(container: IContainer): Promise<void>;
+    teardown?(container: IContainer): Promise<void>;
 
     onReady?(container: IContainer): Promise<void>;
 
@@ -26,6 +26,6 @@ export interface IApplication {
     addModule(module: IModule): void;
     addModules(modules: IModule[]): void;
 
-    start(): Promise<void>;
-    stop(): Promise<void>;
+    setup(): Promise<void>;
+    teardown(): Promise<void>;
 }

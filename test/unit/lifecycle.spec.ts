@@ -9,15 +9,15 @@ function createModule(
         dependsOn?: string[];
         onReady?: IModule['onReady'];
         onError?: IModule['onError'];
-        startFn?: (container: IContainer) => Promise<void>;
+        setupFn?: (container: IContainer) => Promise<void>;
     } = {},
 ): IModule {
     return {
         name,
         dependsOn: opts.dependsOn,
-        async start(container) {
-            if (opts.startFn) {
-                await opts.startFn(container);
+        async setup(container) {
+            if (opts.setupFn) {
+                await opts.setupFn(container);
             }
         },
         onReady: opts.onReady,
@@ -27,25 +27,25 @@ function createModule(
 
 describe('Lifecycle Hooks', () => {
     describe('onReady', () => {
-        it('should call onReady after all modules have started', async () => {
+        it('should call onReady after all modules have been set up', async () => {
             const events: string[] = [];
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { events.push('start:a'); },
+                    setupFn: async () => { events.push('setup:a'); },
                     onReady: async () => { events.push('ready:a'); },
                 }),
                 createModule('b', {
                     dependsOn: ['a'],
-                    startFn: async () => { events.push('start:b'); },
+                    setupFn: async () => { events.push('setup:b'); },
                     onReady: async () => { events.push('ready:b'); },
                 }),
             ]);
 
-            await app.start();
+            await app.setup();
 
             expect(events).toEqual([
-                'start:a',
-                'start:b',
+                'setup:a',
+                'setup:b',
                 'ready:a',
                 'ready:b',
             ]);
@@ -59,7 +59,7 @@ describe('Lifecycle Hooks', () => {
                 }),
             ]);
 
-            await app.start();
+            await app.setup();
             expect(readyContainer).toBe(app.container);
         });
 
@@ -67,44 +67,44 @@ describe('Lifecycle Hooks', () => {
             const events: string[] = [];
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { events.push('start:a'); },
+                    setupFn: async () => { events.push('setup:a'); },
                 }),
                 createModule('b', {
-                    startFn: async () => { events.push('start:b'); },
+                    setupFn: async () => { events.push('setup:b'); },
                     onReady: async () => { events.push('ready:b'); },
                 }),
             ]);
 
-            await app.start();
-            expect(events).toEqual(['start:a', 'start:b', 'ready:b']);
+            await app.setup();
+            expect(events).toEqual(['setup:a', 'setup:b', 'ready:b']);
         });
     });
 
     describe('onError', () => {
-        it('should call onError when start() throws', async () => {
+        it('should call onError when setup() throws', async () => {
             const onError = vi.fn();
-            const error = new Error('startup failed');
+            const error = new Error('setup failed');
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { throw error; },
+                    setupFn: async () => { throw error; },
                     onError,
                 }),
             ]);
 
-            await expect(app.start()).rejects.toThrow('startup failed');
+            await expect(app.setup()).rejects.toThrow('setup failed');
             expect(onError).toHaveBeenCalledWith(error, app.container);
         });
 
-        it('should not call onReady if a module fails to start', async () => {
+        it('should not call onReady if a module fails to set up', async () => {
             const onReady = vi.fn();
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { throw new Error('fail'); },
+                    setupFn: async () => { throw new Error('fail'); },
                     onReady,
                 }),
             ]);
 
-            await expect(app.start()).rejects.toThrow('fail');
+            await expect(app.setup()).rejects.toThrow('fail');
             expect(onReady).not.toHaveBeenCalled();
         });
 
@@ -115,12 +115,12 @@ describe('Lifecycle Hooks', () => {
                 createModule('a', { onError: onErrorA }),
                 createModule('b', {
                     dependsOn: ['a'],
-                    startFn: async () => { throw new Error('b failed'); },
+                    setupFn: async () => { throw new Error('b failed'); },
                     onError: onErrorB,
                 }),
             ]);
 
-            await expect(app.start()).rejects.toThrow('b failed');
+            await expect(app.setup()).rejects.toThrow('b failed');
             expect(onErrorA).not.toHaveBeenCalled();
             expect(onErrorB).toHaveBeenCalledOnce();
         });
@@ -129,110 +129,110 @@ describe('Lifecycle Hooks', () => {
             const error = new Error('original');
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { throw error; },
+                    setupFn: async () => { throw error; },
                     onError: async () => { /* swallow */ },
                 }),
             ]);
 
-            await expect(app.start()).rejects.toThrow(error);
+            await expect(app.setup()).rejects.toThrow(error);
         });
 
         it('should throw the original error even if onError itself throws', async () => {
             const original = new Error('original');
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { throw original; },
+                    setupFn: async () => { throw original; },
                     onError: async () => { throw new Error('handler broke'); },
                 }),
             ]);
 
-            await expect(app.start()).rejects.toThrow(original);
+            await expect(app.setup()).rejects.toThrow(original);
         });
 
         it('should work when no onError handler is defined', async () => {
             const app = new Application([
                 createModule('a', {
-                    startFn: async () => { throw new Error('no handler'); },
+                    setupFn: async () => { throw new Error('no handler'); },
                 }),
             ]);
 
-            await expect(app.start()).rejects.toThrow('no handler');
+            await expect(app.setup()).rejects.toThrow('no handler');
         });
 
-        it('should tear down already-started modules on failure', async () => {
+        it('should tear down already-set-up modules on failure', async () => {
             const events: string[] = [];
             const app = new Application([
                 {
                     name: 'a',
-                    async start() { events.push('start:a'); },
-                    async stop() { events.push('stop:a'); },
+                    async setup() { events.push('setup:a'); },
+                    async teardown() { events.push('teardown:a'); },
                 },
                 {
                     name: 'b',
                     dependsOn: ['a'],
-                    async start() { events.push('start:b'); },
-                    async stop() { events.push('stop:b'); },
+                    async setup() { events.push('setup:b'); },
+                    async teardown() { events.push('teardown:b'); },
                 },
                 {
                     name: 'c',
                     dependsOn: ['b'],
-                    async start() { throw new Error('c failed'); },
-                    async stop() { events.push('stop:c'); },
+                    async setup() { throw new Error('c failed'); },
+                    async teardown() { events.push('teardown:c'); },
                 },
             ]);
 
-            await expect(app.start()).rejects.toThrow('c failed');
+            await expect(app.setup()).rejects.toThrow('c failed');
             expect(events).toEqual([
-                'start:a',
-                'start:b',
-                'stop:b',
-                'stop:a',
+                'setup:a',
+                'setup:b',
+                'teardown:b',
+                'teardown:a',
             ]);
         });
 
-        it('should continue teardown if a stop() throws during rollback', async () => {
-            const stops: string[] = [];
+        it('should continue teardown if a teardown() throws during rollback', async () => {
+            const teardowns: string[] = [];
             const app = new Application([
                 {
                     name: 'a',
-                    async start() { /* ok */ },
-                    async stop() { stops.push('a'); },
+                    async setup() { /* ok */ },
+                    async teardown() { teardowns.push('a'); },
                 },
                 {
                     name: 'b',
                     dependsOn: ['a'],
-                    async start() { /* ok */ },
-                    async stop() { throw new Error('stop:b failed'); },
+                    async setup() { /* ok */ },
+                    async teardown() { throw new Error('teardown:b failed'); },
                 },
                 {
                     name: 'c',
                     dependsOn: ['b'],
-                    async start() { throw new Error('start:c failed'); },
+                    async setup() { throw new Error('setup:c failed'); },
                 },
             ]);
 
-            await expect(app.start()).rejects.toThrow('start:c failed');
-            expect(stops).toEqual(['a']);
+            await expect(app.setup()).rejects.toThrow('setup:c failed');
+            expect(teardowns).toEqual(['a']);
         });
 
         it('should not tear down the failing module itself', async () => {
-            const stops: string[] = [];
+            const teardowns: string[] = [];
             const app = new Application([
                 {
                     name: 'a',
-                    async start() { /* ok */ },
-                    async stop() { stops.push('a'); },
+                    async setup() { /* ok */ },
+                    async teardown() { teardowns.push('a'); },
                 },
                 {
                     name: 'b',
                     dependsOn: ['a'],
-                    async start() { throw new Error('fail'); },
-                    async stop() { stops.push('b'); },
+                    async setup() { throw new Error('fail'); },
+                    async teardown() { teardowns.push('b'); },
                 },
             ]);
 
-            await expect(app.start()).rejects.toThrow('fail');
-            expect(stops).toEqual(['a']);
+            await expect(app.setup()).rejects.toThrow('fail');
+            expect(teardowns).toEqual(['a']);
         });
     });
 });

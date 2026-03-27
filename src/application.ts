@@ -22,7 +22,7 @@ export class Application implements IApplication {
         this.modules = new Map();
         this.modulesOrdered = [];
 
-        modules.forEach((module) => this.addModule(module));
+        this.addModules(modules);
     }
 
     addModule(module: IModule): void {
@@ -33,13 +33,13 @@ export class Application implements IApplication {
         modules.forEach((module) => this.addModule(module));
     }
 
-    async start(): Promise<void> {
+    async setup(): Promise<void> {
         this.modulesOrdered = this.resolveOrder();
 
         const started: IModule[] = [];
         for (const module of this.modulesOrdered) {
             try {
-                await module.start(this.container);
+                await module.setup(this.container);
                 started.push(module);
             } catch (error) {
                 try {
@@ -48,7 +48,7 @@ export class Application implements IApplication {
                     // must not mask the original error
                 }
 
-                await this.stopModules(started);
+                await this.teardownModules(started);
                 throw error;
             }
         }
@@ -58,16 +58,16 @@ export class Application implements IApplication {
         }
     }
 
-    async stop(): Promise<void> {
-        await this.stopModules(this.modulesOrdered);
+    async teardown(): Promise<void> {
+        await this.teardownModules(this.modulesOrdered);
     }
 
-    protected async stopModules(modules: IModule[]): Promise<void> {
+    protected async teardownModules(modules: IModule[]): Promise<void> {
         for (const module of [...modules].reverse()) {
             try {
-                await module.stop?.(this.container);
+                await module.teardown?.(this.container);
             } catch {
-                // individual stopModules failure must not prevent remaining modules from stopping
+                // individual teardown failure must not prevent remaining modules from tearing down
             }
         }
     }
