@@ -1,44 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { IContainer } from 'eldin';
-import { Application } from '../../src';
-import type { IModule } from '../../src';
-
-function createModule(
-    name: string,
-    opts: {
-        dependsOn?: string[];
-        onReady?: IModule['onReady'];
-        onError?: IModule['onError'];
-        setupFn?: (container: IContainer) => Promise<void>;
-    } = {},
-): IModule {
-    return {
-        name,
-        dependsOn: opts.dependsOn,
-        async setup(container) {
-            if (opts.setupFn) {
-                await opts.setupFn(container);
-            }
-        },
-        onReady: opts.onReady,
-        onError: opts.onError,
-    };
-}
+import { Application, defineModule } from '../../src';
 
 describe('Lifecycle Hooks', () => {
     describe('onReady', () => {
         it('should call onReady after all modules have been set up', async () => {
             const events: string[] = [];
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { events.push('setup:a'); },
-                    onReady: async () => { events.push('ready:a'); },
-                }),
-                createModule('b', {
+                defineModule({
+                    name: 'a',
+                    async setup() { events.push('setup:a'); },
+                    async onReady() { events.push('ready:a'); },
+                })(),
+                defineModule({
+                    name: 'b',
                     dependsOn: ['a'],
-                    setupFn: async () => { events.push('setup:b'); },
-                    onReady: async () => { events.push('ready:b'); },
-                }),
+                    async setup() { events.push('setup:b'); },
+                    async onReady() { events.push('ready:b'); },
+                })(),
             ]);
 
             await app.setup();
@@ -54,9 +33,11 @@ describe('Lifecycle Hooks', () => {
         it('should pass the container to onReady', async () => {
             let readyContainer: IContainer | undefined;
             const app = new Application([
-                createModule('a', {
-                    onReady: async (container) => { readyContainer = container; },
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() {},
+                    async onReady(container) { readyContainer = container; },
+                })(),
             ]);
 
             await app.setup();
@@ -66,13 +47,15 @@ describe('Lifecycle Hooks', () => {
         it('should skip modules without onReady', async () => {
             const events: string[] = [];
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { events.push('setup:a'); },
-                }),
-                createModule('b', {
-                    setupFn: async () => { events.push('setup:b'); },
-                    onReady: async () => { events.push('ready:b'); },
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() { events.push('setup:a'); },
+                })(),
+                defineModule({
+                    name: 'b',
+                    async setup() { events.push('setup:b'); },
+                    async onReady() { events.push('ready:b'); },
+                })(),
             ]);
 
             await app.setup();
@@ -82,26 +65,33 @@ describe('Lifecycle Hooks', () => {
 
     describe('onError', () => {
         it('should call onError when setup() throws', async () => {
-            const onError = vi.fn();
+            let caughtError: Error | undefined;
+            let errorContainer: IContainer | undefined;
             const error = new Error('setup failed');
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { throw error; },
-                    onError,
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() { throw error; },
+                    async onError(err, container) {
+                        caughtError = err;
+                        errorContainer = container;
+                    },
+                })(),
             ]);
 
             await expect(app.setup()).rejects.toThrow('setup failed');
-            expect(onError).toHaveBeenCalledWith(error, app.container);
+            expect(caughtError).toBe(error);
+            expect(errorContainer).toBe(app.container);
         });
 
         it('should not call onReady if a module fails to set up', async () => {
             const onReady = vi.fn();
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { throw new Error('fail'); },
-                    onReady,
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() { throw new Error('fail'); },
+                    async onReady() { onReady(); },
+                })(),
             ]);
 
             await expect(app.setup()).rejects.toThrow('fail');
@@ -112,12 +102,17 @@ describe('Lifecycle Hooks', () => {
             const onErrorA = vi.fn();
             const onErrorB = vi.fn();
             const app = new Application([
-                createModule('a', { onError: onErrorA }),
-                createModule('b', {
+                defineModule({
+                    name: 'a',
+                    async setup() {},
+                    async onError() { onErrorA(); },
+                })(),
+                defineModule({
+                    name: 'b',
                     dependsOn: ['a'],
-                    setupFn: async () => { throw new Error('b failed'); },
-                    onError: onErrorB,
-                }),
+                    async setup() { throw new Error('b failed'); },
+                    async onError() { onErrorB(); },
+                })(),
             ]);
 
             await expect(app.setup()).rejects.toThrow('b failed');
@@ -128,10 +123,11 @@ describe('Lifecycle Hooks', () => {
         it('should still throw the original error even if onError is defined', async () => {
             const error = new Error('original');
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { throw error; },
-                    onError: async () => { /* swallow */ },
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() { throw error; },
+                    async onError() { /* swallow */ },
+                })(),
             ]);
 
             await expect(app.setup()).rejects.toThrow(error);
@@ -140,10 +136,11 @@ describe('Lifecycle Hooks', () => {
         it('should throw the original error even if onError itself throws', async () => {
             const original = new Error('original');
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { throw original; },
-                    onError: async () => { throw new Error('handler broke'); },
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() { throw original; },
+                    async onError() { throw new Error('handler broke'); },
+                })(),
             ]);
 
             await expect(app.setup()).rejects.toThrow(original);
@@ -151,9 +148,10 @@ describe('Lifecycle Hooks', () => {
 
         it('should work when no onError handler is defined', async () => {
             const app = new Application([
-                createModule('a', {
-                    setupFn: async () => { throw new Error('no handler'); },
-                }),
+                defineModule({
+                    name: 'a',
+                    async setup() { throw new Error('no handler'); },
+                })(),
             ]);
 
             await expect(app.setup()).rejects.toThrow('no handler');
