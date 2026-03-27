@@ -1,17 +1,33 @@
 import { describe, expect, it } from 'vitest';
 import { TypedToken } from 'eldin';
 import type { IContainer } from 'eldin';
-import { Application, ApplicationError, defineModule } from '../../src';
+import { Application, ApplicationError } from '../../src';
+import type { IModule } from '../../src';
+
+function createModule(
+    name: string,
+    opts: { dependsOn?: string[]; order?: string[]; teardownOrder?: string[]; hasTeardown?: boolean } = {},
+): IModule {
+    return {
+        name,
+        dependsOn: opts.dependsOn,
+        async setup() {
+            opts.order?.push(name);
+        },
+        ...(opts.hasTeardown !== false && {
+            async teardown() {
+                opts.teardownOrder?.push(name);
+            },
+        }),
+    };
+}
 
 describe('Application', () => {
     describe('module registration', () => {
         it('should add a single module via addModule()', async () => {
             const order: string[] = [];
             const app = new Application();
-            app.addModule(defineModule({
-                name: 'a',
-                async setup() { order.push('a'); },
-            })());
+            app.addModule(createModule('a', { order }));
             await app.setup();
             expect(order).toEqual(['a']);
         });
@@ -20,14 +36,8 @@ describe('Application', () => {
             const order: string[] = [];
             const app = new Application();
             app.addModules([
-                defineModule({
-                    name: 'a',
-                    async setup() { order.push('a'); },
-                })(),
-                defineModule({
-                    name: 'b',
-                    async setup() { order.push('b'); },
-                })(),
+                createModule('a', { order }),
+                createModule('b', { order }),
             ]);
             await app.setup();
             expect(order).toHaveLength(2);
@@ -36,14 +46,8 @@ describe('Application', () => {
         it('should accept initial modules via constructor', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() { order.push('a'); },
-                })(),
-                defineModule({
-                    name: 'b',
-                    async setup() { order.push('b'); },
-                })(),
+                createModule('a', { order }),
+                createModule('b', { order }),
             ]);
             await app.setup();
             expect(order).toHaveLength(2);
@@ -54,9 +58,9 @@ describe('Application', () => {
         it('should set up modules with no dependencies in registration order', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({ name: 'a', async setup() { order.push('a'); } })(),
-                defineModule({ name: 'b', async setup() { order.push('b'); } })(),
-                defineModule({ name: 'c', async setup() { order.push('c'); } })(),
+                createModule('a', { order }),
+                createModule('b', { order }),
+                createModule('c', { order }),
             ]);
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
@@ -65,8 +69,8 @@ describe('Application', () => {
         it('should set up modules after their dependencies', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({ name: 'b', dependsOn: ['a'], async setup() { order.push('b'); } })(),
-                defineModule({ name: 'a', async setup() { order.push('a'); } })(),
+                createModule('b', { order, dependsOn: ['a'] }),
+                createModule('a', { order }),
             ]);
             await app.setup();
             expect(order.indexOf('a')).toBeLessThan(order.indexOf('b'));
@@ -75,9 +79,9 @@ describe('Application', () => {
         it('should resolve setup order regardless of registration order', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({ name: 'c', dependsOn: ['b'], async setup() { order.push('c'); } })(),
-                defineModule({ name: 'b', dependsOn: ['a'], async setup() { order.push('b'); } })(),
-                defineModule({ name: 'a', async setup() { order.push('a'); } })(),
+                createModule('c', { order, dependsOn: ['b'] }),
+                createModule('b', { order, dependsOn: ['a'] }),
+                createModule('a', { order }),
             ]);
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
@@ -86,10 +90,10 @@ describe('Application', () => {
         it('should resolve deep dependency chains (A → B → C → D)', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({ name: 'd', dependsOn: ['c'], async setup() { order.push('d'); } })(),
-                defineModule({ name: 'c', dependsOn: ['b'], async setup() { order.push('c'); } })(),
-                defineModule({ name: 'b', dependsOn: ['a'], async setup() { order.push('b'); } })(),
-                defineModule({ name: 'a', async setup() { order.push('a'); } })(),
+                createModule('d', { order, dependsOn: ['c'] }),
+                createModule('c', { order, dependsOn: ['b'] }),
+                createModule('b', { order, dependsOn: ['a'] }),
+                createModule('a', { order }),
             ]);
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c', 'd']);
@@ -98,10 +102,10 @@ describe('Application', () => {
         it('should resolve diamond dependencies correctly', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({ name: 'a', dependsOn: ['b', 'c'], async setup() { order.push('a'); } })(),
-                defineModule({ name: 'b', dependsOn: ['d'], async setup() { order.push('b'); } })(),
-                defineModule({ name: 'c', dependsOn: ['d'], async setup() { order.push('c'); } })(),
-                defineModule({ name: 'd', async setup() { order.push('d'); } })(),
+                createModule('a', { order, dependsOn: ['b', 'c'] }),
+                createModule('b', { order, dependsOn: ['d'] }),
+                createModule('c', { order, dependsOn: ['d'] }),
+                createModule('d', { order }),
             ]);
             await app.setup();
             expect(order.indexOf('d')).toBeLessThan(order.indexOf('b'));
@@ -116,23 +120,9 @@ describe('Application', () => {
             const setupOrder: string[] = [];
             const teardownOrder: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'c',
-                    dependsOn: ['b'],
-                    async setup() { setupOrder.push('c'); },
-                    async teardown() { teardownOrder.push('c'); },
-                })(),
-                defineModule({
-                    name: 'b',
-                    dependsOn: ['a'],
-                    async setup() { setupOrder.push('b'); },
-                    async teardown() { teardownOrder.push('b'); },
-                })(),
-                defineModule({
-                    name: 'a',
-                    async setup() { setupOrder.push('a'); },
-                    async teardown() { teardownOrder.push('a'); },
-                })(),
+                createModule('c', { order: setupOrder, teardownOrder, dependsOn: ['b'] }),
+                createModule('b', { order: setupOrder, teardownOrder, dependsOn: ['a'] }),
+                createModule('a', { order: setupOrder, teardownOrder }),
             ]);
             await app.setup();
             await app.teardown();
@@ -142,20 +132,9 @@ describe('Application', () => {
         it('should skip modules without teardown()', async () => {
             const teardownOrder: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {},
-                    async teardown() { teardownOrder.push('a'); },
-                })(),
-                defineModule({
-                    name: 'b',
-                    async setup() {},
-                })(),
-                defineModule({
-                    name: 'c',
-                    async setup() {},
-                    async teardown() { teardownOrder.push('c'); },
-                })(),
+                createModule('a', { teardownOrder }),
+                createModule('b', { teardownOrder, hasTeardown: false }),
+                createModule('c', { teardownOrder }),
             ]);
             await app.setup();
             await app.teardown();
@@ -181,25 +160,25 @@ describe('Application', () => {
     describe('circular dependency detection', () => {
         it('should throw ApplicationError for two modules depending on each other', async () => {
             const app = new Application([
-                defineModule({ name: 'a', dependsOn: ['b'], async setup() {} })(),
-                defineModule({ name: 'b', dependsOn: ['a'], async setup() {} })(),
+                createModule('a', { dependsOn: ['b'] }),
+                createModule('b', { dependsOn: ['a'] }),
             ]);
             await expect(app.setup()).rejects.toThrow(ApplicationError);
         });
 
         it('should throw ApplicationError for a three-way cycle', async () => {
             const app = new Application([
-                defineModule({ name: 'a', dependsOn: ['c'], async setup() {} })(),
-                defineModule({ name: 'b', dependsOn: ['a'], async setup() {} })(),
-                defineModule({ name: 'c', dependsOn: ['b'], async setup() {} })(),
+                createModule('a', { dependsOn: ['c'] }),
+                createModule('b', { dependsOn: ['a'] }),
+                createModule('c', { dependsOn: ['b'] }),
             ]);
             await expect(app.setup()).rejects.toThrow(ApplicationError);
         });
 
         it('should include module names in the error message', async () => {
             const app = new Application([
-                defineModule({ name: 'x', dependsOn: ['y'], async setup() {} })(),
-                defineModule({ name: 'y', dependsOn: ['x'], async setup() {} })(),
+                createModule('x', { dependsOn: ['y'] }),
+                createModule('y', { dependsOn: ['x'] }),
             ]);
             await expect(app.setup()).rejects.toThrow(/x/);
             await expect(app.setup()).rejects.toThrow(/y/);
@@ -210,7 +189,7 @@ describe('Application', () => {
         it('should silently skip unregistered dependencies', async () => {
             const order: string[] = [];
             const app = new Application([
-                defineModule({ name: 'a', dependsOn: ['nonexistent'], async setup() { order.push('a'); } })(),
+                createModule('a', { order, dependsOn: ['nonexistent'] }),
             ]);
             await app.setup();
             expect(order).toEqual(['a']);

@@ -5,84 +5,56 @@
  *  view the LICENSE file that was distributed with this source code.
  */
 
-import type { IContainer } from 'eldin';
-import type { IModule } from './types.ts';
-
-export type ModuleOptions = Record<string, unknown>;
-
-export interface ModuleDefinition<T extends ModuleOptions> {
-    name: string;
-    dependsOn?: string[];
-    defaults?: T;
-    setup: (options: T, container: IContainer) => Promise<void>;
-    teardown?: (options: T, container: IContainer) => Promise<void>;
-    onReady?: (options: T, container: IContainer) => Promise<void>;
-    onError?: (options: T, error: Error, container: IContainer) => Promise<void>;
-}
-
-export interface SimpleModuleDefinition {
-    name: string;
-    dependsOn?: string[];
-    setup: (container: IContainer) => Promise<void>;
-    teardown?: (container: IContainer) => Promise<void>;
-    onReady?: (container: IContainer) => Promise<void>;
-    onError?: (error: Error, container: IContainer) => Promise<void>;
-}
-
-export type ModuleFactory<T extends ModuleOptions> = (overrides?: Partial<T> | false) => IModule;
-
-export type SimpleModuleFactory = (disable?: false) => IModule;
-
-export function defineModule(
-    definition: SimpleModuleDefinition,
-): SimpleModuleFactory;
+import type { IModule, ModuleDefinition, ModuleFactory, ModuleFactoryDefinition, ModuleOptions } from './types.ts';
 
 export function defineModule<T extends ModuleOptions>(
     definition: ModuleDefinition<T>,
 ): ModuleFactory<T>;
 
 export function defineModule<T extends ModuleOptions>(
-    definition: ModuleDefinition<T> | SimpleModuleDefinition,
-): ModuleFactory<T> {
-    const hasOptions = 'defaults' in definition || definition.setup.length > 1;
+    definition: ModuleFactoryDefinition<T>,
+): ModuleFactory<T>;
 
+export function defineModule<T extends ModuleOptions>(
+    definition: ModuleDefinition<T> | ModuleFactoryDefinition<T>,
+): ModuleFactory<T> {
     return (overrides?: Partial<T> | false): IModule => {
         if (overrides === false) {
+            const name = 'factory' in definition ?
+                'disabled' :
+                definition.name;
+
             return {
-                name: definition.name,
+                name,
                 async setup() { /* empty */ },
             };
         }
 
-        const options = hasOptions ?
-            { ...(definition as ModuleDefinition<T>).defaults, ...overrides } as T :
-            undefined;
+        const options = { ...definition.defaults, ...overrides } as T;
 
-        const { name, dependsOn } = definition;
-        const s = definition.setup as (...args: any[]) => Promise<void>;
-        const t = definition.teardown as ((...args: any[]) => Promise<void>) | undefined;
-        const r = definition.onReady as ((...args: any[]) => Promise<void>) | undefined;
-        const e = definition.onError as ((...args: any[]) => Promise<void>) | undefined;
+        if ('factory' in definition) {
+            return definition.factory(options);
+        }
 
         return {
-            name,
-            dependsOn,
-            async setup(container: IContainer) {
-                await (options ? s(options, container) : s(container));
+            name: definition.name,
+            dependsOn: definition.dependsOn,
+            async setup(container) {
+                await definition.setup(options, container);
             },
-            ...(t && {
-                async teardown(container: IContainer) {
-                    await (options ? t(options, container) : t(container));
+            ...(definition.teardown && {
+                async teardown(container) {
+                    await definition.teardown!(options, container);
                 },
             }),
-            ...(r && {
-                async onReady(container: IContainer) {
-                    await (options ? r(options, container) : r(container));
+            ...(definition.onReady && {
+                async onReady(container) {
+                    await definition.onReady!(options, container);
                 },
             }),
-            ...(e && {
-                async onError(error: Error, container: IContainer) {
-                    await (options ? e(options, error, container) : e(error, container));
+            ...(definition.onError && {
+                async onError(error, container) {
+                    await definition.onError!(options, error, container);
                 },
             }),
         };

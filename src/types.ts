@@ -5,8 +5,8 @@
  *  view the LICENSE file that was distributed with this source code.
  */
 
-import type {IContainer} from 'eldin';
-import type {ModuleStatus} from './constants.ts';
+import type { IContainer } from 'eldin';
+import type { ModuleStatus } from './constants.ts';
 
 export interface IModule {
     readonly name: string;
@@ -33,3 +33,22 @@ export interface IApplication {
     setup(): Promise<void>;
     teardown(): Promise<void>;
 }
+
+export type ModuleOptions = Record<string, unknown>;
+
+export interface ModuleDefinition<T extends ModuleOptions> {
+    name: string;
+    dependsOn?: string[];
+    defaults?: T;
+    setup: (options: T, container: IContainer) => Promise<void>;
+    teardown?: (options: T, container: IContainer) => Promise<void>;
+    onReady?: (options: T, container: IContainer) => Promise<void>;
+    onError?: (options: T, error: Error, container: IContainer) => Promise<void>;
+}
+
+export interface ModuleFactoryDefinition<T extends ModuleOptions> {
+    defaults?: T;
+    factory: (options: T) => IModule;
+}
+
+export type ModuleFactory<T extends ModuleOptions> = (overrides?: Partial<T> | false) => IModule;

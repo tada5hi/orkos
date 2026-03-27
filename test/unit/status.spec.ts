@@ -1,12 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { Application, ApplicationError, ModuleStatus, defineModule } from '../../src';
+import { Application, ApplicationError, ModuleStatus } from '../../src';
+import type { IModule } from '../../src';
+
+function createModule(
+    name: string,
+    opts: {
+        dependsOn?: string[];
+        setupFn?: () => Promise<void>;
+        teardownFn?: () => Promise<void>;
+    } = {},
+): IModule {
+    return {
+        name,
+        dependsOn: opts.dependsOn,
+        async setup() {
+            if (opts.setupFn) {
+                await opts.setupFn();
+            }
+        },
+        async teardown() {
+            if (opts.teardownFn) {
+                await opts.teardownFn();
+            }
+        },
+    };
+}
 
 describe('Module Status Tracking', () => {
     describe('getModuleStatus', () => {
         it('should return pending for a registered module before setup', () => {
-            const app = new Application([
-                defineModule({ name: 'a', async setup() {} })(),
-            ]);
+            const app = new Application([createModule('a')]);
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Pending);
         });
 
@@ -16,21 +39,13 @@ describe('Module Status Tracking', () => {
         });
 
         it('should return ready after successful setup', async () => {
-            const app = new Application([
-                defineModule({ name: 'a', async setup() {} })(),
-            ]);
+            const app = new Application([createModule('a')]);
             await app.setup();
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Ready);
         });
 
         it('should return torn-down after teardown', async () => {
-            const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {},
-                    async teardown() {},
-                })(),
-            ]);
+            const app = new Application([createModule('a')]);
             await app.setup();
             await app.teardown();
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.TornDown);
@@ -38,10 +53,9 @@ describe('Module Status Tracking', () => {
 
         it('should return failed for a module whose setup threw', async () => {
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() { throw new Error('fail'); },
-                })(),
+                createModule('a', {
+                    setupFn: async () => { throw new Error('fail'); },
+                }),
             ]);
             await expect(app.setup()).rejects.toThrow('fail');
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Failed);
@@ -51,8 +65,8 @@ describe('Module Status Tracking', () => {
     describe('getStatus', () => {
         it('should return a map of all module statuses', async () => {
             const app = new Application([
-                defineModule({ name: 'a', async setup() {} })(),
-                defineModule({ name: 'b', dependsOn: ['a'], async setup() {} })(),
+                createModule('a'),
+                createModule('b', { dependsOn: ['a'] }),
             ]);
             await app.setup();
 
@@ -62,9 +76,7 @@ describe('Module Status Tracking', () => {
         });
 
         it('should return a copy that does not affect internal state', async () => {
-            const app = new Application([
-                defineModule({ name: 'a', async setup() {} })(),
-            ]);
+            const app = new Application([createModule('a')]);
             const status = app.getStatus();
             status.set('a', ModuleStatus.Failed);
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Pending);
@@ -75,12 +87,11 @@ describe('Module Status Tracking', () => {
         it('should transition through setting-up to ready', async () => {
             const observed: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {
+                createModule('a', {
+                    setupFn: async () => {
                         observed.push(app.getModuleStatus('a'));
                     },
-                })(),
+                }),
             ]);
 
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Pending);
@@ -94,13 +105,11 @@ describe('Module Status Tracking', () => {
         it('should transition through tearing-down to torn-down', async () => {
             const observed: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {},
-                    async teardown() {
+                createModule('a', {
+                    teardownFn: async () => {
                         observed.push(app.getModuleStatus('a'));
                     },
-                })(),
+                }),
             ]);
 
             await app.setup();
@@ -114,23 +123,18 @@ describe('Module Status Tracking', () => {
         it('should only tear down modules in ready state on setup failure', async () => {
             const teardowns: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {},
-                    async teardown() { teardowns.push('a'); },
-                })(),
-                defineModule({
-                    name: 'b',
+                createModule('a', {
+                    teardownFn: async () => { teardowns.push('a'); },
+                }),
+                createModule('b', {
                     dependsOn: ['a'],
-                    async setup() {},
-                    async teardown() { teardowns.push('b'); },
-                })(),
-                defineModule({
-                    name: 'c',
+                    teardownFn: async () => { teardowns.push('b'); },
+                }),
+                createModule('c', {
                     dependsOn: ['b'],
-                    async setup() { throw new Error('c failed'); },
-                    async teardown() { teardowns.push('c'); },
-                })(),
+                    setupFn: async () => { throw new Error('c failed'); },
+                    teardownFn: async () => { teardowns.push('c'); },
+                }),
             ]);
 
             await expect(app.setup()).rejects.toThrow('c failed');
@@ -143,23 +147,18 @@ describe('Module Status Tracking', () => {
         it('should not tear down pending modules after a failure', async () => {
             const teardowns: string[] = [];
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {},
-                    async teardown() { teardowns.push('a'); },
-                })(),
-                defineModule({
-                    name: 'b',
+                createModule('a', {
+                    teardownFn: async () => { teardowns.push('a'); },
+                }),
+                createModule('b', {
                     dependsOn: ['a'],
-                    async setup() { throw new Error('b failed'); },
-                    async teardown() { teardowns.push('b'); },
-                })(),
-                defineModule({
-                    name: 'c',
+                    setupFn: async () => { throw new Error('b failed'); },
+                    teardownFn: async () => { teardowns.push('b'); },
+                }),
+                createModule('c', {
                     dependsOn: ['b'],
-                    async setup() {},
-                    async teardown() { teardowns.push('c'); },
-                })(),
+                    teardownFn: async () => { teardowns.push('c'); },
+                }),
             ]);
 
             await expect(app.setup()).rejects.toThrow('b failed');
@@ -171,11 +170,9 @@ describe('Module Status Tracking', () => {
 
         it('should mark module as torn-down even if teardown() throws', async () => {
             const app = new Application([
-                defineModule({
-                    name: 'a',
-                    async setup() {},
-                    async teardown() { throw new Error('teardown failed'); },
-                })(),
+                createModule('a', {
+                    teardownFn: async () => { throw new Error('teardown failed'); },
+                }),
             ]);
 
             await app.setup();
