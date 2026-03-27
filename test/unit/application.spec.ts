@@ -146,7 +146,7 @@ describe('Application', () => {
             const app = new Application();
             app.addModule({
                 name: 'a',
-                async start() {},
+                async start() { /* noop */ },
                 async stop(container) {
                     stopContainer = container;
                 },
