@@ -1,6 +1,6 @@
 {
     "name": "orkos",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "type": "module",
     "description": "A lightweight modular application orchestrator for TypeScript with dependency-ordered startup, shutdown, and topological module resolution.",
     "author": {
