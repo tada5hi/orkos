@@ -59,7 +59,7 @@ describe('defineModule', () => {
             expect(setupFn).not.toHaveBeenCalled();
         });
 
-        it('should preserve dependsOn', async () => {
+        it('should preserve dependencies', async () => {
             const order: string[] = [];
 
             const CreateA = defineModule<{ label: string }>({
@@ -73,7 +73,7 @@ describe('defineModule', () => {
             const CreateB = defineModule<{ label: string }>({
                 name: 'b',
                 defaults: { label: 'b' },
-                dependsOn: ['a'],
+                dependencies: ['a'],
                 async setup(options) {
                     order.push(options.label);
                 },
@@ -142,16 +142,16 @@ describe('defineModule', () => {
             expect(teardownContainer).toBe(app.container);
         });
 
-        it('should strip dependsOn on disabled module', () => {
+        it('should strip dependencies on disabled module', () => {
             const CreateModule = defineModule<{ ttl: number }>({
                 name: 'test',
                 defaults: { ttl: 0 },
-                dependsOn: ['other'],
+                dependencies: ['other'],
                 async setup() { /* noop */ },
             });
 
             const mod = CreateModule(false);
-            expect(mod.dependsOn).toBeUndefined();
+            expect(mod.dependencies).toBeUndefined();
         });
     });
 
@@ -224,7 +224,7 @@ describe('defineModule', () => {
                 defaults: { label: 'test' },
                 factory: (options) => ({
                     name: 'test',
-                    dependsOn: ['other'],
+                    dependencies: ['other'],
                     async setup() { order.push(options.label); },
                     async teardown() { order.push(`teardown:${options.label}`); },
                 }),
@@ -232,7 +232,7 @@ describe('defineModule', () => {
 
             const mod = CreateModule();
             expect(mod.name).toBe('test');
-            expect(mod.dependsOn).toEqual(['other']);
+            expect(mod.dependencies).toEqual(['other']);
         });
     });
 });

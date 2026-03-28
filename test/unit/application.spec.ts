@@ -6,11 +6,11 @@ import type { IModule } from '../../src';
 
 function createModule(
     name: string,
-    opts: { dependsOn?: string[]; order?: string[]; teardownOrder?: string[]; hasTeardown?: boolean } = {},
+    opts: { dependencies?: string[]; order?: string[]; teardownOrder?: string[]; hasTeardown?: boolean } = {},
 ): IModule {
     return {
         name,
-        dependsOn: opts.dependsOn,
+        dependencies: opts.dependencies,
         async setup() {
             opts.order?.push(name);
         },
@@ -69,7 +69,7 @@ describe('Application', () => {
         it('should set up modules after their dependencies', async () => {
             const order: string[] = [];
             const app = new Application([
-                createModule('b', { order, dependsOn: ['a'] }),
+                createModule('b', { order, dependencies: ['a'] }),
                 createModule('a', { order }),
             ]);
             await app.setup();
@@ -79,8 +79,8 @@ describe('Application', () => {
         it('should resolve setup order regardless of registration order', async () => {
             const order: string[] = [];
             const app = new Application([
-                createModule('c', { order, dependsOn: ['b'] }),
-                createModule('b', { order, dependsOn: ['a'] }),
+                createModule('c', { order, dependencies: ['b'] }),
+                createModule('b', { order, dependencies: ['a'] }),
                 createModule('a', { order }),
             ]);
             await app.setup();
@@ -90,9 +90,9 @@ describe('Application', () => {
         it('should resolve deep dependency chains (A → B → C → D)', async () => {
             const order: string[] = [];
             const app = new Application([
-                createModule('d', { order, dependsOn: ['c'] }),
-                createModule('c', { order, dependsOn: ['b'] }),
-                createModule('b', { order, dependsOn: ['a'] }),
+                createModule('d', { order, dependencies: ['c'] }),
+                createModule('c', { order, dependencies: ['b'] }),
+                createModule('b', { order, dependencies: ['a'] }),
                 createModule('a', { order }),
             ]);
             await app.setup();
@@ -102,9 +102,9 @@ describe('Application', () => {
         it('should resolve diamond dependencies correctly', async () => {
             const order: string[] = [];
             const app = new Application([
-                createModule('a', { order, dependsOn: ['b', 'c'] }),
-                createModule('b', { order, dependsOn: ['d'] }),
-                createModule('c', { order, dependsOn: ['d'] }),
+                createModule('a', { order, dependencies: ['b', 'c'] }),
+                createModule('b', { order, dependencies: ['d'] }),
+                createModule('c', { order, dependencies: ['d'] }),
                 createModule('d', { order }),
             ]);
             await app.setup();
@@ -120,8 +120,8 @@ describe('Application', () => {
             const setupOrder: string[] = [];
             const teardownOrder: string[] = [];
             const app = new Application([
-                createModule('c', { order: setupOrder, teardownOrder, dependsOn: ['b'] }),
-                createModule('b', { order: setupOrder, teardownOrder, dependsOn: ['a'] }),
+                createModule('c', { order: setupOrder, teardownOrder, dependencies: ['b'] }),
+                createModule('b', { order: setupOrder, teardownOrder, dependencies: ['a'] }),
                 createModule('a', { order: setupOrder, teardownOrder }),
             ]);
             await app.setup();
@@ -160,25 +160,25 @@ describe('Application', () => {
     describe('circular dependency detection', () => {
         it('should throw ApplicationError for two modules depending on each other', async () => {
             const app = new Application([
-                createModule('a', { dependsOn: ['b'] }),
-                createModule('b', { dependsOn: ['a'] }),
+                createModule('a', { dependencies: ['b'] }),
+                createModule('b', { dependencies: ['a'] }),
             ]);
             await expect(app.setup()).rejects.toThrow(ApplicationError);
         });
 
         it('should throw ApplicationError for a three-way cycle', async () => {
             const app = new Application([
-                createModule('a', { dependsOn: ['c'] }),
-                createModule('b', { dependsOn: ['a'] }),
-                createModule('c', { dependsOn: ['b'] }),
+                createModule('a', { dependencies: ['c'] }),
+                createModule('b', { dependencies: ['a'] }),
+                createModule('c', { dependencies: ['b'] }),
             ]);
             await expect(app.setup()).rejects.toThrow(ApplicationError);
         });
 
         it('should include module names in the error message', async () => {
             const app = new Application([
-                createModule('x', { dependsOn: ['y'] }),
-                createModule('y', { dependsOn: ['x'] }),
+                createModule('x', { dependencies: ['y'] }),
+                createModule('y', { dependencies: ['x'] }),
             ]);
             await expect(app.setup()).rejects.toThrow(/x/);
             await expect(app.setup()).rejects.toThrow(/y/);
@@ -189,7 +189,7 @@ describe('Application', () => {
         it('should silently skip unregistered dependencies', async () => {
             const order: string[] = [];
             const app = new Application([
-                createModule('a', { order, dependsOn: ['nonexistent'] }),
+                createModule('a', { order, dependencies: ['nonexistent'] }),
             ]);
             await app.setup();
             expect(order).toEqual(['a']);
@@ -208,7 +208,7 @@ describe('Application', () => {
                 },
                 {
                     name: 'consumer',
-                    dependsOn: ['producer'],
+                    dependencies: ['producer'],
                     async setup(container) {
                         expect(container.resolve(Token)).toBe('hello');
                     },

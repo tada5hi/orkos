@@ -51,11 +51,11 @@
         "eldin": ">=1.1.0"
     },
     "devDependencies": {
-        "eldin": "^1.1.0",
         "@tada5hi/commitlint-config": "^1.3.1",
         "@tada5hi/eslint-config": "^2.0.2",
         "@tada5hi/tsconfig": "^0.7.2",
         "@vitest/coverage-v8": "^4.1.2",
+        "eldin": "^1.1.0",
         "eslint": "^10.1.0",
         "husky": "^9.1.7",
         "tsdown": "^0.21.5",

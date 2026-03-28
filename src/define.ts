@@ -38,7 +38,7 @@ export function defineModule<T extends ModuleOptions>(
 
         return {
             name: definition.name,
-            dependsOn: definition.dependsOn,
+            dependencies: definition.dependencies,
             async setup(container) {
                 await definition.setup(options, container);
             },
