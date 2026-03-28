@@ -7,6 +7,23 @@
 
 import type { IModule, ModuleDefinition, ModuleFactory, ModuleFactoryDefinition, ModuleOptions } from './types.ts';
 
+/**
+ * Create a typed module factory with default options.
+ * Call the returned factory with partial overrides, or `false` to disable the module.
+ *
+ * @param definition - The module definition (inline or factory-based).
+ * @returns A factory function that creates an {@link IModule} from optional overrides.
+ *
+ * @example
+ * const Cache = defineModule<{ ttl: number }>({
+ *     name: 'cache',
+ *     defaults: { ttl: 3600 },
+ *     async setup(options, container) { ... },
+ * });
+ * app.addModule(Cache());             // defaults
+ * app.addModule(Cache({ ttl: 60 }));  // override
+ * app.addModule(Cache(false));         // disabled
+ */
 export function defineModule<T extends ModuleOptions>(
     definition: ModuleDefinition<T>,
 ): ModuleFactory<T>;

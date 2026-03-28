@@ -5,6 +5,9 @@
  *  view the LICENSE file that was distributed with this source code.
  */
 
+/**
+ * Thrown on circular dependencies, missing required modules, or version constraint violations.
+ */
 export class ApplicationError extends Error {
     constructor(message: string) {
         super(message);

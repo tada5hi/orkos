@@ -24,6 +24,14 @@ function compare(a: SemverTuple, b: SemverTuple): number {
     return 0;
 }
 
+/**
+ * Check whether a semver version string satisfies a range constraint.
+ * Supported range prefixes: `>=`, `>`, `<=`, `<`, `~`, `^`, or exact match.
+ *
+ * @param version - The version string to check (e.g. `2.1.0`).
+ * @param range - The semver range constraint (e.g. `>=2.0.0`).
+ * @returns `true` if the version satisfies the range.
+ */
 export function satisfies(version: string, range: string): boolean {
     const v = parse(version);
     if (!v) {
