@@ -18,9 +18,17 @@ Test config is at `test/vitest.config.ts`:
 - **Test pattern**: `test/unit/**/*.{test,spec}.{js,ts}`
 - **Coverage thresholds** (all 80%): branches, functions, lines, statements
 
-## Current State
+## Test Files
 
-The existing test file (`test/unit/index.spec.ts`) is a placeholder that imports a non-existent `add` function. It needs to be rewritten to test the actual `Application` class.
+| File | Coverage |
+|------|----------|
+| `application.spec.ts` | Module registration, dependency resolution, setup/teardown ordering, circular dependency detection |
+| `lifecycle.spec.ts` | `onReady` and `onError` hooks |
+| `status.spec.ts` | `ModuleStatus` tracking and partial teardown |
+| `define.spec.ts` | `defineModule()` factory, defaults merging, disable via `false` |
+| `versioning.spec.ts` | Semver dependency constraints and optional dependencies |
+| `semver.spec.ts` | `satisfies()` utility with various range patterns |
+| `error.spec.ts` | `ApplicationError` construction |
 
 ## Conventions
 

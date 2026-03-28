@@ -10,6 +10,7 @@ concurrency:
 permissions:
     contents: write
     pull-requests: write
+    id-token: write
 
 env:
     PRIMARY_NODE_VERSION: 22
@@ -40,8 +41,6 @@ jobs:
               if: steps.release.outputs.releases_created == 'true'
               uses: ./.github/actions/build
 
-            #- name: Publish
-            #  if: steps.release.outputs.releases_created == 'true'
-            #  env:
-            #      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-            #  run: npm publish --access public
+            - name: Publish
+              if: steps.release.outputs.releases_created == 'true'
+              uses: tada5hi/monoship@v2

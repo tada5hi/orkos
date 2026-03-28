@@ -1,6 +1,6 @@
 {
     "name": "orkos",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "type": "module",
     "description": "A lightweight modular application orchestrator for TypeScript with dependency-ordered startup, shutdown, and topological module resolution.",
     "author": {
@@ -10,7 +10,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/tada5hi/orkos.git"
+        "url": "git+https://github.com/tada5hi/orkos.git"
     },
     "main": "dist/index.mjs",
     "types": "dist/index.d.mts",
@@ -38,13 +38,16 @@
         "prepare": "husky"
     },
     "keywords": [
-        "application",
-        "module",
-        "orchestration",
-        "lifecycle",
-        "dependency-ordering",
+        "typescript",
+        "module-orchestrator",
+        "lifecycle-management",
         "topological-sort",
-        "typescript"
+        "dependency-resolution",
+        "plugin-system",
+        "modular-architecture",
+        "application-framework",
+        "startup-shutdown",
+        "module-loader"
     ],
     "license": "MIT",
     "peerDependencies": {
@@ -62,5 +65,8 @@
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.57.2",
         "vitest": "^4.1.1"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
