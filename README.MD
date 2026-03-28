@@ -10,16 +10,19 @@ A lightweight modular application orchestrator for TypeScript.
 
 Define modules with dependencies, and orkos sets them up in the right order and tears them down in reverse. Built on top of [eldin](https://github.com/tada5hi/eldin) for dependency injection.
 
+## Core Philosophy
+
+Application startup is deceptively complex: services depend on each other, initialization order matters, and teardown must reverse that order reliably. orkos handles this with a single, explicit pattern — modules declare their dependencies, and a topological sort determines the rest. No implicit wiring, no decorator magic, no runtime surprises. The shared [eldin](https://github.com/tada5hi/eldin) container gives modules a clean way to exchange services without tight coupling.
+
 **Table of Contents**
 
+- [Core Philosophy](#core-philosophy)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Modules](#modules)
 - [defineModule](#definemodule)
 - [Dependency Ordering](#dependency-ordering)
-- [Module Versioning](#module-versioning)
-- [Lifecycle Hooks](#lifecycle-hooks)
-- [Module Status](#module-status)
+- [Module Lifecycle](#module-lifecycle)
 - [Application API](#application-api)
 - [Usage with eldin](#usage-with-eldin)
 - [Contributing](#contributing)
@@ -210,117 +213,31 @@ Circular dependencies are detected and throw an `ApplicationError`:
 
 If a module declares a dependency on a module that isn't registered, the dependency is silently skipped. This allows optional modules.
 
-## Module Versioning
+## Module Lifecycle
+
+### Versioning
 
 Modules can declare a `version` and use `ModuleDependency` objects to enforce semver constraints:
 
 ```typescript
-import type { IModule } from 'orkos';
-
-class DatabaseModule implements IModule {
-    readonly name = 'database';
-    readonly version = '2.1.0';
-
-    async setup(container) { /* ... */ }
-}
-
-class AuthModule implements IModule {
-    readonly name = 'auth';
-    readonly version = '3.0.0';
-    readonly dependencies = [
-        'config',                                    // any version
-        { name: 'database', version: '>=2.0.0' },   // semver constraint
-        { name: 'ldap', optional: true },            // optional dependency
-    ];
-
-    async setup(container) { /* ... */ }
-}
+const dependencies = [
+    'config',                                    // any version
+    { name: 'database', version: '>=2.0.0' },   // semver constraint
+    { name: 'ldap', optional: true },            // optional, skipped when missing
+];
 ```
 
-### ModuleDependency
+Supported ranges: `>=`, `>`, `<=`, `<`, `~`, `^`, and exact match. If a constraint is not satisfied, `setup()` throws an `ApplicationError`.
 
-```typescript
-interface ModuleDependency {
-    name: string;
-    version?: string;     // semver range (>=, >, <=, <, ~, ^, or exact)
-    optional?: boolean;   // skip silently when missing
-}
-```
+### Hooks
 
-### Version Constraints
+**`onReady(container)`** — Called after **all** modules have been set up successfully, in dependency order. Use it for tasks that require the full application to be initialized (e.g. starting background jobs).
 
-| Range | Meaning |
-|-------|---------|
-| `>=2.0.0` | Version 2.0.0 or higher |
-| `>1.0.0` | Greater than 1.0.0 |
-| `^2.1.0` | Compatible with 2.1.0 (>=2.1.0 <3.0.0) |
-| `~2.1.0` | Patch-level changes (>=2.1.0 <2.2.0) |
-| `2.0.0` | Exact match |
+**`onError(error, container)`** — Called when this module's `setup()` throws. The original error is re-thrown after the hook runs. On failure, orkos automatically tears down any modules that were already set up successfully, in reverse order.
 
-If a version constraint is not satisfied, `setup()` throws an `ApplicationError` with a descriptive message.
+### Status Tracking
 
-### Optional Dependencies
-
-Dependencies with `optional: true` are silently skipped when the module isn't registered. When present, version constraints are still validated.
-
-## Lifecycle Hooks
-
-### onReady
-
-Called after **all** modules have been set up successfully, in dependency order:
-
-```typescript
-const app = new Application([
-    {
-        name: 'metrics',
-        async setup(container) { /* register metrics */ },
-        async onReady(container) {
-            // All modules are ready — safe to start background tasks
-            startMetricsCollection();
-        },
-    },
-]);
-```
-
-### onError
-
-Called when this module's `setup()` throws. The original error is still re-thrown after the hook runs:
-
-```typescript
-const app = new Application([
-    {
-        name: 'database',
-        async setup(container) {
-            await connectToDb(); // might throw
-        },
-        async onError(error, container) {
-            logger.error('Database setup failed', error);
-        },
-    },
-]);
-```
-
-On setup failure, orkos automatically tears down any modules that were already set up successfully, in reverse order.
-
-## Module Status
-
-Track module lifecycle state with `getModuleStatus()` and `getStatus()`:
-
-```typescript
-import { ModuleStatus } from 'orkos';
-
-const app = new Application([dbModule, httpModule]);
-
-app.getModuleStatus('database'); // ModuleStatus.Pending
-
-await app.setup();
-app.getModuleStatus('database'); // ModuleStatus.Ready
-
-await app.teardown();
-app.getModuleStatus('database'); // ModuleStatus.TornDown
-```
-
-Possible statuses: `Pending`, `SettingUp`, `Ready`, `TearingDown`, `TornDown`, `Failed`.
+Each module moves through a lifecycle: `Pending → SettingUp → Ready` (or `Failed`), and `TearingDown → TornDown`. Query state via `getModuleStatus(name)` or `getStatus()` for the full map.
 
 ## Application API
 
