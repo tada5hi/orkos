@@ -27,8 +27,9 @@ Test config is at `test/vitest.config.ts`:
 | `status.spec.ts` | `ModuleStatus` tracking and partial teardown |
 | `define.spec.ts` | `defineModule()` factory, defaults merging, disable via `false` |
 | `versioning.spec.ts` | Semver dependency constraints and optional dependencies |
+| `resolve.spec.ts` | External module resolution, recursive resolution, auto-install, error cases |
 | `semver.spec.ts` | `satisfies()` utility with various range patterns |
-| `error.spec.ts` | `ApplicationError` construction |
+| `error.spec.ts` | `ApplicationError` construction, `ebec` integration, error codes |
 
 ## Conventions
 

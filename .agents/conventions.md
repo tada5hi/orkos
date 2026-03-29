@@ -15,6 +15,17 @@ Format: `type(scope): description`
 
 Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`
 
+## Naming: Options vs Context
+
+Use `*Options` for types containing only plain objects and scalars (strings, numbers, booleans). Use `*Context` for types containing class instances, complex objects (Maps, arrays of complex types), or functions.
+
+| Suffix | When to use | Examples |
+|--------|-------------|---------|
+| `*Options` | Plain scalars, simple config | `SetupOptions { resolveCache?: boolean }` |
+| `*Context` | Class instances, Maps, functions, complex arrays | `ApplicationContext { container?: IContainer; modules?: ModuleInput[] }` |
+
+If a type mixes both, the presence of any complex member tips it into `*Context`.
+
 ## Build
 
 - **tsdown** compiles TypeScript to ESM (`dist/index.mjs` + `dist/index.d.mts`)

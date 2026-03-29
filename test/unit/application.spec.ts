@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TypedToken } from 'eldin';
 import type { IContainer } from 'eldin';
-import { Application, ApplicationError } from '../../src';
+import { Application, ApplicationError, ApplicationErrorCode } from '../../src';
 import type { IModule } from '../../src';
 
 function createModule(
@@ -175,16 +175,23 @@ describe('Application', () => {
 
     describe('circular dependency detection', () => {
         it('should throw ApplicationError for two modules depending on each other', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['b'] }),
                     createModule('b', { dependencies: ['a'] }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.CIRCULAR_DEPENDENCY);
+            }
         });
 
         it('should throw ApplicationError for a three-way cycle', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['c'] }),
@@ -192,11 +199,16 @@ describe('Application', () => {
                     createModule('c', { dependencies: ['b'] }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.CIRCULAR_DEPENDENCY);
+            }
         });
 
         it('should include module names in the error message', async () => {
-            expect.assertions(2);
+            expect.assertions(3);
             const app = new Application({
                 modules: [
                     createModule('x', { dependencies: ['y'] }),
@@ -206,6 +218,7 @@ describe('Application', () => {
             try {
                 await app.setup();
             } catch (error) {
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.CIRCULAR_DEPENDENCY);
                 expect((error as Error).message).toMatch(/x/);
                 expect((error as Error).message).toMatch(/y/);
             }
@@ -214,7 +227,7 @@ describe('Application', () => {
 
     describe('missing dependencies', () => {
         it('should throw for unregistered non-optional dependencies', async () => {
-            expect.assertions(2);
+            expect.assertions(3);
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['nonexistent'] }),
@@ -224,6 +237,7 @@ describe('Application', () => {
                 await app.setup();
             } catch (error) {
                 expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.MODULE_NOT_FOUND);
                 expect((error as Error).message).toContain('nonexistent');
             }
         });
