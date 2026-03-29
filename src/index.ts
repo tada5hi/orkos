@@ -12,6 +12,7 @@ export * from './error.ts';
 export { resolveExternalModules } from './resolve.ts';
 export type {
     ApplicationContext,
+    ExternalModuleReference,
     IApplication,
     IModule,
     ModuleDependency,
@@ -20,5 +21,6 @@ export type {
     ModuleFactoryDefinition,
     ModuleInput,
     ModuleOptions,
+    ResolveExternalModulesContext,
     SetupOptions,
 } from './types.ts';

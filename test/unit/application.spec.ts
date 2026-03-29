@@ -209,13 +209,18 @@ describe('Application', () => {
 
     describe('missing dependencies', () => {
         it('should throw for unregistered non-optional dependencies', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['nonexistent'] }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
-            await expect(app.setup()).rejects.toThrow(/nonexistent/);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as Error).message).toContain('nonexistent');
+            }
         });
     });
 

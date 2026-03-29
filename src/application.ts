@@ -161,10 +161,15 @@ export class Application implements IApplication {
 
         for (const module of resolved) {
             this.moduleStatus.set(module.name, ModuleStatus.Pending);
+
+            // Track resolved module for potential re-resolution
+            if (!this.modulesExternal.some((e) => (e.expectedName ?? e.name) === module.name)) {
+                const ref = pending.find((r) => (r.expectedName ?? r.name) === module.name) ??
+                    { name: module.name, source: 'dependency' as const };
+                this.modulesExternal.push(ref);
+            }
         }
 
-        // Track all resolved externals for potential re-resolution
-        this.modulesExternal.push(...this.modulesPending);
         this.modulesPending = [];
     }
 
