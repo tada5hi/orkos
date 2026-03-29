@@ -39,15 +39,19 @@
     },
     "keywords": [
         "typescript",
-        "module-orchestrator",
-        "lifecycle-management",
+        "module",
+        "orchestrator",
+        "lifecycle",
         "topological-sort",
-        "dependency-resolution",
+        "dependency-order",
+        "dependency-injection",
+        "startup",
+        "shutdown",
+        "graceful-shutdown",
         "plugin-system",
-        "modular-architecture",
+        "module-loader",
         "application-framework",
-        "startup-shutdown",
-        "module-loader"
+        "modular"
     ],
     "license": "MIT",
     "peerDependencies": {
