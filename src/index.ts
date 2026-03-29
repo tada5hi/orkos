@@ -9,4 +9,16 @@ export * from './application.ts';
 export * from './constants.ts';
 export * from './define.ts';
 export * from './error.ts';
-export * from './types.ts';
+export { resolveExternalModules } from './resolve.ts';
+export type {
+    ApplicationContext,
+    IApplication,
+    IModule,
+    ModuleDependency,
+    ModuleDefinition,
+    ModuleFactory,
+    ModuleFactoryDefinition,
+    ModuleInput,
+    ModuleOptions,
+    SetupOptions,
+} from './types.ts';

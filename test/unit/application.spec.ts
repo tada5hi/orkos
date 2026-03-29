@@ -45,10 +45,12 @@ describe('Application', () => {
 
         it('should accept initial modules via constructor', async () => {
             const order: string[] = [];
-            const app = new Application([
-                createModule('a', { order }),
-                createModule('b', { order }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('a', { order }),
+                    createModule('b', { order }),
+                ],
+            });
             await app.setup();
             expect(order).toHaveLength(2);
         });
@@ -57,56 +59,66 @@ describe('Application', () => {
     describe('setup order (topological sort)', () => {
         it('should set up modules with no dependencies in registration order', async () => {
             const order: string[] = [];
-            const app = new Application([
-                createModule('a', { order }),
-                createModule('b', { order }),
-                createModule('c', { order }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('a', { order }),
+                    createModule('b', { order }),
+                    createModule('c', { order }),
+                ],
+            });
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
         });
 
         it('should set up modules after their dependencies', async () => {
             const order: string[] = [];
-            const app = new Application([
-                createModule('b', { order, dependencies: ['a'] }),
-                createModule('a', { order }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('b', { order, dependencies: ['a'] }),
+                    createModule('a', { order }),
+                ],
+            });
             await app.setup();
             expect(order.indexOf('a')).toBeLessThan(order.indexOf('b'));
         });
 
         it('should resolve setup order regardless of registration order', async () => {
             const order: string[] = [];
-            const app = new Application([
-                createModule('c', { order, dependencies: ['b'] }),
-                createModule('b', { order, dependencies: ['a'] }),
-                createModule('a', { order }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('c', { order, dependencies: ['b'] }),
+                    createModule('b', { order, dependencies: ['a'] }),
+                    createModule('a', { order }),
+                ],
+            });
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
         });
 
         it('should resolve deep dependency chains (A → B → C → D)', async () => {
             const order: string[] = [];
-            const app = new Application([
-                createModule('d', { order, dependencies: ['c'] }),
-                createModule('c', { order, dependencies: ['b'] }),
-                createModule('b', { order, dependencies: ['a'] }),
-                createModule('a', { order }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('d', { order, dependencies: ['c'] }),
+                    createModule('c', { order, dependencies: ['b'] }),
+                    createModule('b', { order, dependencies: ['a'] }),
+                    createModule('a', { order }),
+                ],
+            });
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c', 'd']);
         });
 
         it('should resolve diamond dependencies correctly', async () => {
             const order: string[] = [];
-            const app = new Application([
-                createModule('a', { order, dependencies: ['b', 'c'] }),
-                createModule('b', { order, dependencies: ['d'] }),
-                createModule('c', { order, dependencies: ['d'] }),
-                createModule('d', { order }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('a', { order, dependencies: ['b', 'c'] }),
+                    createModule('b', { order, dependencies: ['d'] }),
+                    createModule('c', { order, dependencies: ['d'] }),
+                    createModule('d', { order }),
+                ],
+            });
             await app.setup();
             expect(order.indexOf('d')).toBeLessThan(order.indexOf('b'));
             expect(order.indexOf('d')).toBeLessThan(order.indexOf('c'));
@@ -119,11 +131,13 @@ describe('Application', () => {
         it('should tear down modules in reverse setup order', async () => {
             const setupOrder: string[] = [];
             const teardownOrder: string[] = [];
-            const app = new Application([
-                createModule('c', { order: setupOrder, teardownOrder, dependencies: ['b'] }),
-                createModule('b', { order: setupOrder, teardownOrder, dependencies: ['a'] }),
-                createModule('a', { order: setupOrder, teardownOrder }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('c', { order: setupOrder, teardownOrder, dependencies: ['b'] }),
+                    createModule('b', { order: setupOrder, teardownOrder, dependencies: ['a'] }),
+                    createModule('a', { order: setupOrder, teardownOrder }),
+                ],
+            });
             await app.setup();
             await app.teardown();
             expect(teardownOrder).toEqual([...setupOrder].reverse());
@@ -131,11 +145,13 @@ describe('Application', () => {
 
         it('should skip modules without teardown()', async () => {
             const teardownOrder: string[] = [];
-            const app = new Application([
-                createModule('a', { teardownOrder }),
-                createModule('b', { teardownOrder, hasTeardown: false }),
-                createModule('c', { teardownOrder }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('a', { teardownOrder }),
+                    createModule('b', { teardownOrder, hasTeardown: false }),
+                    createModule('c', { teardownOrder }),
+                ],
+            });
             await app.setup();
             await app.teardown();
             expect(teardownOrder).toEqual(['c', 'a']);
@@ -159,61 +175,70 @@ describe('Application', () => {
 
     describe('circular dependency detection', () => {
         it('should throw ApplicationError for two modules depending on each other', async () => {
-            const app = new Application([
-                createModule('a', { dependencies: ['b'] }),
-                createModule('b', { dependencies: ['a'] }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('a', { dependencies: ['b'] }),
+                    createModule('b', { dependencies: ['a'] }),
+                ],
+            });
             await expect(app.setup()).rejects.toThrow(ApplicationError);
         });
 
         it('should throw ApplicationError for a three-way cycle', async () => {
-            const app = new Application([
-                createModule('a', { dependencies: ['c'] }),
-                createModule('b', { dependencies: ['a'] }),
-                createModule('c', { dependencies: ['b'] }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('a', { dependencies: ['c'] }),
+                    createModule('b', { dependencies: ['a'] }),
+                    createModule('c', { dependencies: ['b'] }),
+                ],
+            });
             await expect(app.setup()).rejects.toThrow(ApplicationError);
         });
 
         it('should include module names in the error message', async () => {
-            const app = new Application([
-                createModule('x', { dependencies: ['y'] }),
-                createModule('y', { dependencies: ['x'] }),
-            ]);
+            const app = new Application({
+                modules: [
+                    createModule('x', { dependencies: ['y'] }),
+                    createModule('y', { dependencies: ['x'] }),
+                ],
+            });
             await expect(app.setup()).rejects.toThrow(/x/);
             await expect(app.setup()).rejects.toThrow(/y/);
         });
     });
 
     describe('missing dependencies', () => {
-        it('should silently skip unregistered dependencies', async () => {
-            const order: string[] = [];
-            const app = new Application([
-                createModule('a', { order, dependencies: ['nonexistent'] }),
-            ]);
-            await app.setup();
-            expect(order).toEqual(['a']);
+        it('should throw for unregistered non-optional dependencies', async () => {
+            const app = new Application({
+                modules: [
+                    createModule('a', { dependencies: ['nonexistent'] }),
+                ],
+            });
+            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            await expect(app.setup()).rejects.toThrow(/nonexistent/);
         });
     });
 
     describe('container sharing', () => {
         it('should share the container across all modules', async () => {
             const Token = new TypedToken<string>('test');
-            const app = new Application([
-                {
-                    name: 'producer',
-                    async setup(container) {
-                        container.register(Token, { useValue: 'hello' });
+            const app = new Application({
+                modules: [
+                    {
+                        name: 'producer',
+                        async setup(container) {
+                            container.register(Token, { useValue: 'hello' });
+                        },
                     },
-                },
-                {
-                    name: 'consumer',
-                    dependencies: ['producer'],
-                    async setup(container) {
-                        expect(container.resolve(Token)).toBe('hello');
+                    {
+                        name: 'consumer',
+                        dependencies: ['producer'],
+                        async setup(container) {
+                            expect(container.resolve(Token)).toBe('hello');
+                        },
                     },
-                },
-            ]);
+                ],
+            });
             await app.setup();
         });
 
