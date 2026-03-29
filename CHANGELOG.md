@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/tada5hi/orkos/compare/v1.0.0...v1.1.0) (2026-03-29)
+
+
+### Features
+
+* add external module resolution via dynamic import ([#19](https://github.com/tada5hi/orkos/issues/19)) ([255d6f1](https://github.com/tada5hi/orkos/commit/255d6f1ba1490dc067e788d027fc9786f5f29b80))
+
 ## 1.0.0 (2026-03-28)
 
 
