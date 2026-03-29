@@ -229,6 +229,10 @@ export interface ExternalModuleReference {
      * The module name that triggered this reference, if source is 'dependency'.
      */
     referencedBy?: string;
+    /**
+     * When `true`, resolution failure is silently skipped instead of throwing.
+     */
+    optional?: boolean;
 }
 
 /**

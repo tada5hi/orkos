@@ -331,6 +331,51 @@ describe('resolveExternalModules', () => {
             expect(importFn).toHaveBeenCalledWith('a');
         });
 
+        it('should skip optional dependencies that fail to resolve', async () => {
+            const moduleA = createMockModule('a', [
+                { name: 'required', optional: false },
+                { name: 'optional-missing', optional: true },
+            ]);
+            const moduleRequired = createMockModule('required');
+            const importFn = createMockImportFn({
+                a: { default: moduleA },
+                required: { default: moduleRequired },
+            });
+
+            const registered = new Map<string, IModule>();
+            const resolved = await resolveExternalModules({
+                pending: [{ name: 'a', source: 'explicit' }],
+                registered,
+                importFn,
+            });
+
+            expect(resolved).toHaveLength(2);
+            expect(registered.has('a')).toBe(true);
+            expect(registered.has('required')).toBe(true);
+            expect(registered.has('optional-missing')).toBe(false);
+        });
+
+        it('should resolve optional dependencies when available', async () => {
+            const moduleA = createMockModule('a', [
+                { name: 'opt', optional: true },
+            ]);
+            const moduleOpt = createMockModule('opt');
+            const importFn = createMockImportFn({
+                a: { default: moduleA },
+                opt: { default: moduleOpt },
+            });
+
+            const registered = new Map<string, IModule>();
+            const resolved = await resolveExternalModules({
+                pending: [{ name: 'a', source: 'explicit' }],
+                registered,
+                importFn,
+            });
+
+            expect(resolved).toHaveLength(2);
+            expect(registered.has('opt')).toBe(true);
+        });
+
         it('should throw RESOLUTION_DEPTH_EXCEEDED when depth limit reached', async () => {
             expect.assertions(1);
             // Create a chain deeper than maxDepth
@@ -474,5 +519,47 @@ describe('Application — external modules', () => {
             await app.teardown();
             await app.setup();
         });
+    });
+});
+
+describe('resolveExternalModules — re-resolution', () => {
+    it('should produce fresh module instances when called again after clearing registered', async () => {
+        let callCount = 0;
+        const importFn = async (name: string) => {
+            if (name === 'redis') {
+                callCount++;
+                return {
+                    default: {
+                        name: 'redis',
+                        version: `1.0.${callCount}`,
+                        async setup() { /* noop */ },
+                    },
+                };
+            }
+            throw new Error(`Cannot find module '${name}'`);
+        };
+
+        const registered = new Map<string, IModule>();
+        const pending = [{ name: 'redis' as const, source: 'explicit' as const }];
+
+        // First resolution
+        const resolved1 = await resolveExternalModules({
+            pending: [...pending],
+            registered,
+            importFn,
+        });
+        expect(resolved1).toHaveLength(1);
+        expect(resolved1[0].version).toBe('1.0.1');
+
+        // Clear and re-resolve (simulates resolveCache: false)
+        registered.delete('redis');
+        const resolved2 = await resolveExternalModules({
+            pending: [...pending],
+            registered,
+            importFn,
+        });
+        expect(resolved2).toHaveLength(1);
+        expect(resolved2[0].version).toBe('1.0.2');
+        expect(callCount).toBe(2);
     });
 });

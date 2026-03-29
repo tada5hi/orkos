@@ -59,7 +59,16 @@ export async function resolveExternalModules(
 
             attempted.add(ref.name);
 
-            const module = await resolveModule(ref, { autoInstall, importFn, installFn });
+            let module: IModule;
+            try {
+                module = await resolveModule(ref, { autoInstall, importFn, installFn });
+            } catch (error) {
+                if (ref.optional) {
+                    continue;
+                }
+                throw error;
+            }
+
             registered.set(module.name, module);
             resolved.push(module);
 
@@ -75,6 +84,7 @@ export async function resolveExternalModules(
                             expectedName: dep.package ? dep.name : undefined,
                             source: 'dependency',
                             referencedBy: module.name,
+                            optional: dep.optional,
                         });
                     }
                 }
