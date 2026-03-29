@@ -196,14 +196,19 @@ describe('Application', () => {
         });
 
         it('should include module names in the error message', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('x', { dependencies: ['y'] }),
                     createModule('y', { dependencies: ['x'] }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(/x/);
-            await expect(app.setup()).rejects.toThrow(/y/);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect((error as Error).message).toMatch(/x/);
+                expect((error as Error).message).toMatch(/y/);
+            }
         });
     });
 

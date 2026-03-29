@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Application, ApplicationError } from '../../src';
+import { Application, ApplicationError, ApplicationErrorCode } from '../../src';
 import type { IModule } from '../../src';
 
 function createModule(
@@ -106,11 +106,17 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
-            await expect(app.setup()).rejects.toThrow(/auth/);
-            await expect(app.setup()).rejects.toThrow(/db/);
-            await expect(app.setup()).rejects.toThrow(/>=2.0.0/);
-            await expect(app.setup()).rejects.toThrow(/1.5.0/);
+            expect.assertions(6);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.VERSION_MISMATCH);
+                expect((error as Error).message).toMatch(/auth/);
+                expect((error as Error).message).toMatch(/db/);
+                expect((error as Error).message).toMatch(/>=2.0.0/);
+                expect((error as Error).message).toMatch(/1.5.0/);
+            }
         });
 
         it('should pass when version satisfies ^ constraint', async () => {
@@ -126,6 +132,7 @@ describe('Module Versioning', () => {
         });
 
         it('should throw when version exceeds ^ constraint major', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('db', { version: '3.0.0' }),
@@ -134,7 +141,12 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.VERSION_MISMATCH);
+            }
         });
 
         it('should pass when version satisfies ~ constraint', async () => {
@@ -150,6 +162,7 @@ describe('Module Versioning', () => {
         });
 
         it('should throw when version exceeds ~ constraint minor', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.2.0' }),
@@ -158,7 +171,12 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.VERSION_MISMATCH);
+            }
         });
 
         it('should pass when version matches exact constraint', async () => {
@@ -174,6 +192,7 @@ describe('Module Versioning', () => {
         });
 
         it('should throw when version does not match exact constraint', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.0.1' }),
@@ -182,7 +201,12 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.VERSION_MISMATCH);
+            }
         });
 
         it('should throw when dependency has version constraint but target has no version', async () => {
@@ -194,8 +218,14 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
-            await expect(app.setup()).rejects.toThrow(/does not declare a version/);
+            expect.assertions(3);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.VERSION_MISMATCH);
+                expect((error as Error).message).toMatch(/does not declare a version/);
+            }
         });
     });
 
@@ -230,6 +260,7 @@ describe('Module Versioning', () => {
         });
 
         it('should still validate version on optional dependency when present', async () => {
+            expect.assertions(2);
             const app = new Application({
                 modules: [
                     createModule('ldap', { version: '1.0.0' }),
@@ -238,7 +269,12 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
-            await expect(app.setup()).rejects.toThrow(ApplicationError);
+            try {
+                await app.setup();
+            } catch (error) {
+                expect(error).toBeInstanceOf(ApplicationError);
+                expect((error as ApplicationError).code).toBe(ApplicationErrorCode.VERSION_MISMATCH);
+            }
         });
     });
 
