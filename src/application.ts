@@ -7,10 +7,20 @@
 
 import type { IContainer } from 'eldin';
 import { Container } from 'eldin';
+import { ApplicationErrorCode, ModuleStatus } from './constants.ts';
 import { ApplicationError } from './error.ts';
+import { resolveExternalModules } from './resolve.ts';
 import { satisfies } from './semver.ts';
-import type { IApplication, IModule, ModuleDependency } from './types.ts';
-import { ModuleStatus } from './constants.ts';
+import type {
+    ApplicationContext,
+    ExternalModuleReference,
+    IApplication,
+    IModule,
+    ModuleDependency,
+    ModuleInput,
+    ModuleOptions,
+    SetupOptions,
+} from './types.ts';
 
 export class Application implements IApplication {
     public readonly container: IContainer;
@@ -19,30 +29,64 @@ export class Application implements IApplication {
 
     protected modulesOrdered: IModule[];
 
+    protected modulesPending: ExternalModuleReference[];
+
+    protected modulesExternal: ExternalModuleReference[];
+
     protected moduleStatus: Map<string, ModuleStatus>;
 
-    constructor(modules: IModule[] = []) {
-        this.container = new Container();
+    protected autoInstall: boolean;
+
+    protected maxResolveDepth: number;
+
+    constructor(context?: ApplicationContext) {
+        this.container = context?.container ?? new Container();
         this.modules = new Map();
         this.modulesOrdered = [];
+        this.modulesPending = [];
+        this.modulesExternal = [];
         this.moduleStatus = new Map();
+        this.autoInstall = context?.autoInstall ?? false;
+        this.maxResolveDepth = context?.maxResolveDepth ?? 10;
 
-        this.addModules(modules);
+        if (context?.modules) {
+            this.addModules(context.modules);
+        }
     }
 
-    addModule(module: IModule): void {
+    addModule(module: ModuleInput): void {
+        if (typeof module === 'string') {
+            this.modulesPending.push({
+                name: module,
+                source: 'explicit',
+            });
+            return;
+        }
+
+        if (Array.isArray(module)) {
+            this.modulesPending.push({
+                name: module[0],
+                options: module[1] as ModuleOptions,
+                source: 'explicit',
+            });
+            return;
+        }
+
         this.modules.set(module.name, module);
         this.moduleStatus.set(module.name, ModuleStatus.Pending);
     }
 
-    addModules(modules: IModule[]): void {
+    addModules(modules: ModuleInput[]): void {
         modules.forEach((module) => this.addModule(module));
     }
 
     getModuleStatus(name: string): ModuleStatus {
         const status = this.moduleStatus.get(name);
         if (status === undefined) {
-            throw new ApplicationError(`Module "${name}" is not registered`);
+            throw new ApplicationError({
+                message: `Module "${name}" is not registered`,
+                code: ApplicationErrorCode.MODULE_NOT_REGISTERED,
+            });
         }
 
         return status;
@@ -52,7 +96,13 @@ export class Application implements IApplication {
         return new Map(this.moduleStatus);
     }
 
-    async setup(): Promise<void> {
+    async setup(options?: SetupOptions): Promise<void> {
+        const resolveCache = options?.resolveCache ?? true;
+
+        if (this.modulesPending.length > 0 || !resolveCache) {
+            await this.resolveExternals(resolveCache);
+        }
+
         this.modulesOrdered = this.resolveOrder();
 
         for (const module of this.modulesOrdered) {
@@ -81,6 +131,46 @@ export class Application implements IApplication {
 
     async teardown(): Promise<void> {
         await this.teardownModules(this.modulesOrdered);
+    }
+
+    protected async resolveExternals(useCache: boolean): Promise<void> {
+        let pending: ExternalModuleReference[];
+
+        if (!useCache) {
+            // Remove previously resolved externals so they can be re-resolved
+            for (const ref of this.modulesExternal) {
+                const name = ref.expectedName ?? ref.name;
+                this.modules.delete(name);
+                this.moduleStatus.delete(name);
+            }
+            pending = [...this.modulesExternal, ...this.modulesPending];
+        } else {
+            pending = [...this.modulesPending];
+        }
+
+        if (pending.length === 0) {
+            return;
+        }
+
+        const resolved = await resolveExternalModules({
+            pending,
+            registered: this.modules,
+            autoInstall: this.autoInstall,
+            maxDepth: this.maxResolveDepth,
+        });
+
+        for (const module of resolved) {
+            this.moduleStatus.set(module.name, ModuleStatus.Pending);
+
+            // Track resolved module for potential re-resolution
+            if (!this.modulesExternal.some((e) => (e.expectedName ?? e.name) === module.name)) {
+                const ref = pending.find((r) => (r.expectedName ?? r.name) === module.name) ??
+                    { name: module.name, source: 'dependency' as const };
+                this.modulesExternal.push(ref);
+            }
+        }
+
+        this.modulesPending = [];
     }
 
     protected async teardownModules(modules: IModule[]): Promise<void> {
@@ -124,8 +214,11 @@ export class Application implements IApplication {
                     if (dep.optional) {
                         return;
                     }
-                    // non-optional missing deps are silently skipped (existing behavior)
-                    return;
+
+                    throw new ApplicationError({
+                        message: `Module "${name}" depends on "${dep.name}", which is not registered`,
+                        code: ApplicationErrorCode.MODULE_NOT_FOUND,
+                    });
                 }
 
                 this.validateDependencyVersion(module.name, dep);
@@ -157,9 +250,10 @@ export class Application implements IApplication {
             const remaining = names
                 .filter((name) => !sorted.some((m) => m.name === name));
 
-            throw new ApplicationError(
-                `Circular module dependency detected involving: ${remaining.join(', ')}`,
-            );
+            throw new ApplicationError({
+                message: `Circular module dependency detected involving: ${remaining.join(', ')}`,
+                code: ApplicationErrorCode.CIRCULAR_DEPENDENCY,
+            });
         }
 
         return sorted;
@@ -184,15 +278,17 @@ export class Application implements IApplication {
         }
 
         if (!target.version) {
-            throw new ApplicationError(
-                `Module "${moduleName}" requires "${dep.name}" version ${dep.version}, but "${dep.name}" does not declare a version`,
-            );
+            throw new ApplicationError({
+                message: `Module "${moduleName}" requires "${dep.name}" version ${dep.version}, but "${dep.name}" does not declare a version`,
+                code: ApplicationErrorCode.VERSION_MISMATCH,
+            });
         }
 
         if (!satisfies(target.version, dep.version)) {
-            throw new ApplicationError(
-                `Module "${moduleName}" requires "${dep.name}" version ${dep.version}, but version ${target.version} is registered`,
-            );
+            throw new ApplicationError({
+                message: `Module "${moduleName}" requires "${dep.name}" version ${dep.version}, but version ${target.version} is registered`,
+                code: ApplicationErrorCode.VERSION_MISMATCH,
+            });
         }
     }
 }

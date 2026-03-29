@@ -24,6 +24,10 @@ export interface ModuleDependency {
      * When `true`, the dependency is silently skipped if not registered.
      */
     optional?: boolean;
+    /**
+     * npm package name for auto-resolution, if different from the module name.
+     */
+    package?: string;
 }
 
 /**
@@ -77,6 +81,49 @@ export interface IModule {
 }
 
 /**
+ * Accepted input types for module registration.
+ * - `IModule` — an already-instantiated module
+ * - `string` — an npm package name to resolve via dynamic import
+ * - `[string, ModuleOptions]` — an npm package name with options for the module factory
+ */
+export type ModuleInput = IModule | string | [string, ModuleOptions];
+
+/**
+ * Options passed to {@link Application.setup}.
+ */
+export interface SetupOptions {
+    /**
+     * When `false`, forces re-resolution of external modules even if previously resolved.
+     * @default true
+     */
+    resolveCache?: boolean;
+}
+
+/**
+ * Configuration for the {@link Application} constructor.
+ */
+export interface ApplicationContext {
+    /**
+     * Modules to register on construction.
+     */
+    modules?: ModuleInput[];
+    /**
+     * When `true`, automatically install missing npm packages during resolution.
+     * @default false
+     */
+    autoInstall?: boolean;
+    /**
+     * A pre-configured DI container. If omitted, a new `Container` is created.
+     */
+    container?: IContainer;
+    /**
+     * Maximum depth for recursive external module resolution.
+     * @default 10
+     */
+    maxResolveDepth?: number;
+}
+
+/**
  * Orchestrates module registration, dependency-ordered setup, and reverse-order teardown.
  */
 export interface IApplication {
@@ -90,13 +137,13 @@ export interface IApplication {
      *
      * @param module - The module to register.
      */
-    addModule(module: IModule): void;
+    addModule(module: ModuleInput): void;
     /**
      * Register multiple modules at once.
      *
      * @param modules - The modules to register.
      */
-    addModules(modules: IModule[]): void;
+    addModules(modules: ModuleInput[]): void;
 
     /**
      * Get the current lifecycle status of a registered module.
@@ -114,8 +161,10 @@ export interface IApplication {
 
     /**
      * Resolve dependency order, validate version constraints, and set up all modules.
+     *
+     * @param options - Optional setup configuration.
      */
-    setup(): Promise<void>;
+    setup(options?: SetupOptions): Promise<void>;
     /**
      * Tear down all ready modules in reverse dependency order.
      */
@@ -154,3 +203,64 @@ export interface ModuleFactoryDefinition<T extends ModuleOptions> {
 }
 
 export type ModuleFactory<T extends ModuleOptions> = (overrides?: Partial<T> | false) => IModule;
+
+/**
+ * Internal representation of an external module reference awaiting resolution.
+ */
+export interface ExternalModuleReference {
+    /**
+     * The npm package name to resolve.
+     */
+    name: string;
+    /**
+     * The expected module name, if different from the package name.
+     * Used when a dependency declares a `package` field that differs from its `name`.
+     */
+    expectedName?: string;
+    /**
+     * Options to pass to the module factory, if applicable.
+     */
+    options?: ModuleOptions;
+    /**
+     * Whether this reference was explicitly added or discovered from a dependency.
+     */
+    source: 'explicit' | 'dependency';
+    /**
+     * The module name that triggered this reference, if source is 'dependency'.
+     */
+    referencedBy?: string;
+    /**
+     * When `true`, resolution failure is silently skipped instead of throwing.
+     */
+    optional?: boolean;
+}
+
+/**
+ * Context for the external module resolver.
+ */
+export interface ResolveExternalModulesContext {
+    /**
+     * External module references to resolve.
+     */
+    pending: ExternalModuleReference[];
+    /**
+     * The current module registry. Mutated during resolution as modules are added.
+     */
+    registered: Map<string, IModule>;
+    /**
+     * When `true`, automatically install missing npm packages.
+     */
+    autoInstall?: boolean;
+    /**
+     * Maximum depth for recursive resolution.
+     */
+    maxDepth?: number;
+    /**
+     * Custom import function for testing.
+     */
+    importFn?: (name: string) => Promise<unknown>;
+    /**
+     * Custom install function for testing.
+     */
+    installFn?: (name: string) => Promise<void>;
+}
