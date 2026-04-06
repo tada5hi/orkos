@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BaseError } from 'ebec';
+import { BaseError } from '@ebec/core';
 import { ApplicationError, ApplicationErrorCode } from '../../src';
 
 describe('ApplicationError', () => {
@@ -38,7 +38,8 @@ describe('ApplicationError', () => {
     });
 
     it('should accept string and options arguments', () => {
-        const error = new ApplicationError('test', {
+        const error = new ApplicationError({
+            message: 'test',
             code: ApplicationErrorCode.MODULE_NOT_FOUND,
         });
         expect(error.message).toBe('test');

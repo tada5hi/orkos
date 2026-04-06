@@ -75,6 +75,6 @@
     },
     "dependencies": {
         "@antfu/install-pkg": "^1.1.0",
-        "ebec": "^2.3.0"
+        "@ebec/core": "^1.0.1"
     }
 }

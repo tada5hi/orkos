@@ -5,8 +5,8 @@
  *  view the LICENSE file that was distributed with this source code.
  */
 
-import type { Input } from 'ebec';
-import { BaseError } from 'ebec';
+import type { ErrorInput } from '@ebec/core';
+import { BaseError } from '@ebec/core';
 
 /**
  * Thrown on circular dependencies, missing required modules, version constraint
@@ -15,7 +15,7 @@ import { BaseError } from 'ebec';
  * Uses error codes from {@link ApplicationErrorCode} for programmatic handling.
  */
 export class ApplicationError extends BaseError {
-    constructor(...input: Input[]) {
-        super(...input);
+    constructor(input?: ErrorInput) {
+        super(input);
     }
 }
