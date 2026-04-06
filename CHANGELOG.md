@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/tada5hi/orkos/compare/v1.1.0...v1.1.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* replace ebec with @ebec/core ([779a113](https://github.com/tada5hi/orkos/commit/779a11381db9aa20bfde91c01ae36afec79cad54))
+
 ## [1.1.0](https://github.com/tada5hi/orkos/compare/v1.0.0...v1.1.0) (2026-03-29)
 
 
