@@ -54,7 +54,9 @@ describe('Module Status Tracking', () => {
         it('should return failed for a module whose setup threw', async () => {
             const app = new Application({
                 modules: [
-                    createModule('a', { setupFn: async () => { throw new Error('fail'); } }),
+                    createModule('a', {
+                        setupFn: async () => { throw new Error('fail'); },
+                    }),
                 ],
             });
             await expect(app.setup()).rejects.toThrow('fail');
@@ -130,7 +132,9 @@ describe('Module Status Tracking', () => {
             const teardowns: string[] = [];
             const app = new Application({
                 modules: [
-                    createModule('a', { teardownFn: async () => { teardowns.push('a'); } }),
+                    createModule('a', {
+                        teardownFn: async () => { teardowns.push('a'); },
+                    }),
                     createModule('b', {
                         dependencies: ['a'],
                         teardownFn: async () => { teardowns.push('b'); },
@@ -154,7 +158,9 @@ describe('Module Status Tracking', () => {
             const teardowns: string[] = [];
             const app = new Application({
                 modules: [
-                    createModule('a', { teardownFn: async () => { teardowns.push('a'); } }),
+                    createModule('a', {
+                        teardownFn: async () => { teardowns.push('a'); },
+                    }),
                     createModule('b', {
                         dependencies: ['a'],
                         setupFn: async () => { throw new Error('b failed'); },
@@ -177,7 +183,9 @@ describe('Module Status Tracking', () => {
         it('should mark module as torn-down even if teardown() throws', async () => {
             const app = new Application({
                 modules: [
-                    createModule('a', { teardownFn: async () => { throw new Error('teardown failed'); } }),
+                    createModule('a', {
+                        teardownFn: async () => { throw new Error('teardown failed'); },
+                    }),
                 ],
             });
 

@@ -30,7 +30,9 @@ describe('resolveExternalModules', () => {
     describe('basic resolution', () => {
         it('should resolve a package with a factory default export', async () => {
             const module = createMockModule('redis');
-            const importFn = createMockImportFn({ redis: { default: () => module } });
+            const importFn = createMockImportFn({
+                redis: { default: () => module },
+            });
 
             const registered = new Map<string, IModule>();
             const resolved = await resolveExternalModules({
@@ -46,7 +48,9 @@ describe('resolveExternalModules', () => {
 
         it('should resolve a package with an IModule default export', async () => {
             const module = createMockModule('orkos-redis');
-            const importFn = createMockImportFn({ 'orkos-redis': { default: module } });
+            const importFn = createMockImportFn({
+                'orkos-redis': { default: module },
+            });
 
             const registered = new Map<string, IModule>();
             const resolved = await resolveExternalModules({
@@ -61,14 +65,12 @@ describe('resolveExternalModules', () => {
 
         it('should pass options to a factory default export', async () => {
             const factory = vi.fn(() => createMockModule('redis'));
-            const importFn = createMockImportFn({ redis: { default: factory } });
+            const importFn = createMockImportFn({
+                redis: { default: factory },
+            });
 
             await resolveExternalModules({
-                pending: [{
-                    name: 'redis', 
-                    options: { host: '10.0.0.1' }, 
-                    source: 'explicit', 
-                }],
+                pending: [{ name: 'redis', options: { host: '10.0.0.1' }, source: 'explicit' }],
                 registered: new Map(),
                 importFn,
             });
@@ -116,11 +118,7 @@ describe('resolveExternalModules', () => {
 
             try {
                 await resolveExternalModules({
-                    pending: [{
-                        name: 'missing', 
-                        source: 'dependency', 
-                        referencedBy: 'auth', 
-                    }],
+                    pending: [{ name: 'missing', source: 'dependency', referencedBy: 'auth' }],
                     registered: new Map(),
                     importFn,
                 });
@@ -131,7 +129,9 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when no default export', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({ 'bad-package': { namedExport: 'hello' } });
+            const importFn = createMockImportFn({
+                'bad-package': { namedExport: 'hello' },
+            });
 
             try {
                 await resolveExternalModules({
@@ -147,7 +147,9 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when default export is invalid', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({ 'bad-package': { default: 42 } });
+            const importFn = createMockImportFn({
+                'bad-package': { default: 42 },
+            });
 
             try {
                 await resolveExternalModules({
@@ -163,15 +165,13 @@ describe('resolveExternalModules', () => {
 
         it('should throw OPTIONS_NOT_SUPPORTED when options passed to IModule export', async () => {
             expect.assertions(1);
-            const importFn = createMockImportFn({ redis: { default: createMockModule('redis') } });
+            const importFn = createMockImportFn({
+                redis: { default: createMockModule('redis') },
+            });
 
             try {
                 await resolveExternalModules({
-                    pending: [{
-                        name: 'redis', 
-                        options: { host: 'localhost' }, 
-                        source: 'explicit', 
-                    }],
+                    pending: [{ name: 'redis', options: { host: 'localhost' }, source: 'explicit' }],
                     registered: new Map(),
                     importFn,
                 });
@@ -182,7 +182,9 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when module name does not match package name', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({ 'orkos-redis': { default: createMockModule('redis') } });
+            const importFn = createMockImportFn({
+                'orkos-redis': { default: createMockModule('redis') },
+            });
 
             try {
                 await resolveExternalModules({
@@ -198,7 +200,9 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when factory returns invalid result', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({ broken: { default: () => ({ notAModule: true }) } });
+            const importFn = createMockImportFn({
+                broken: { default: () => ({ notAModule: true }) },
+            });
 
             try {
                 await resolveExternalModules({
@@ -214,7 +218,9 @@ describe('resolveExternalModules', () => {
 
         it('should validate name on factory return value', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({ 'pkg-a': { default: () => createMockModule('different-name') } });
+            const importFn = createMockImportFn({
+                'pkg-a': { default: () => createMockModule('different-name') },
+            });
 
             try {
                 await resolveExternalModules({
@@ -274,7 +280,9 @@ describe('resolveExternalModules', () => {
         it('should not re-resolve already registered dependencies', async () => {
             const moduleA = createMockModule('a', ['b']);
             const moduleB = createMockModule('b');
-            const importFn = vi.fn(createMockImportFn({ a: { default: moduleA } }));
+            const importFn = vi.fn(createMockImportFn({
+                a: { default: moduleA },
+            }));
 
             const registered = new Map<string, IModule>();
             registered.set('b', moduleB);
@@ -310,7 +318,9 @@ describe('resolveExternalModules', () => {
         it('should not re-import package when expectedName is already registered', async () => {
             const moduleA = createMockModule('a', [{ name: 'b', package: '@scope/b' }]);
             const moduleB = createMockModule('b');
-            const importFn = vi.fn(createMockImportFn({ a: { default: moduleA } }));
+            const importFn = vi.fn(createMockImportFn({
+                a: { default: moduleA },
+            }));
 
             const registered = new Map<string, IModule>();
             registered.set('b', moduleB);
@@ -506,7 +516,9 @@ describe('Application — external modules', () => {
     describe('resolveCache option', () => {
         it('should cache resolved modules by default', async () => {
             const module = createMockModule('a');
-            const app = new Application({ modules: [module] });
+            const app = new Application({
+                modules: [module],
+            });
 
             await app.setup();
             await app.teardown();

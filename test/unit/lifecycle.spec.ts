@@ -62,7 +62,9 @@ describe('Lifecycle Hooks', () => {
             let readyContainer: IContainer | undefined;
             const app = new Application({
                 modules: [
-                    createModule('a', { onReady: async (container) => { readyContainer = container; } }),
+                    createModule('a', {
+                        onReady: async (container) => { readyContainer = container; },
+                    }),
                 ],
             });
 
@@ -74,7 +76,9 @@ describe('Lifecycle Hooks', () => {
             const events: string[] = [];
             const app = new Application({
                 modules: [
-                    createModule('a', { setupFn: async () => { events.push('setup:a'); } }),
+                    createModule('a', {
+                        setupFn: async () => { events.push('setup:a'); },
+                    }),
                     createModule('b', {
                         setupFn: async () => { events.push('setup:b'); },
                         onReady: async () => { events.push('ready:b'); },
@@ -169,7 +173,9 @@ describe('Lifecycle Hooks', () => {
         it('should work when no onError handler is defined', async () => {
             const app = new Application({
                 modules: [
-                    createModule('a', { setupFn: async () => { throw new Error('no handler'); } }),
+                    createModule('a', {
+                        setupFn: async () => { throw new Error('no handler'); },
+                    }),
                 ],
             });
 

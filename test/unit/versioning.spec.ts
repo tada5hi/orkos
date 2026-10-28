@@ -101,7 +101,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '1.5.0' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '>=2.0.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '>=2.0.0' }],
+                    }),
                 ],
             });
             expect.assertions(6);
@@ -121,7 +123,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.3.0' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '^2.1.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '^2.1.0' }],
+                    }),
                 ],
             });
             await app.setup();
@@ -132,7 +136,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '3.0.0' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '^2.1.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '^2.1.0' }],
+                    }),
                 ],
             });
             try {
@@ -147,7 +153,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.1.5' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '~2.1.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '~2.1.0' }],
+                    }),
                 ],
             });
             await app.setup();
@@ -158,7 +166,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.2.0' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '~2.1.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '~2.1.0' }],
+                    }),
                 ],
             });
             try {
@@ -173,7 +183,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.0.0' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '2.0.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '2.0.0' }],
+                    }),
                 ],
             });
             await app.setup();
@@ -184,7 +196,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.0.1' }),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '2.0.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '2.0.0' }],
+                    }),
                 ],
             });
             try {
@@ -199,7 +213,9 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db'),
-                    createModule('auth', { dependencies: [{ name: 'db', version: '>=1.0.0' }] }),
+                    createModule('auth', {
+                        dependencies: [{ name: 'db', version: '>=1.0.0' }],
+                    }),
                 ],
             });
             expect.assertions(3);
@@ -249,11 +265,7 @@ describe('Module Versioning', () => {
                 modules: [
                     createModule('ldap', { version: '1.0.0' }),
                     createModule('auth', {
-                        dependencies: [{
-                            name: 'ldap', 
-                            optional: true, 
-                            version: '>=2.0.0', 
-                        }], 
+                        dependencies: [{ name: 'ldap', optional: true, version: '>=2.0.0' }],
                     }),
                 ],
             });
