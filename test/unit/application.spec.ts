@@ -6,7 +6,12 @@ import type { IModule } from '../../src';
 
 function createModule(
     name: string,
-    opts: { dependencies?: string[]; order?: string[]; teardownOrder?: string[]; hasTeardown?: boolean } = {},
+    opts: {
+        dependencies?: string[]; 
+        order?: string[]; 
+        teardownOrder?: string[]; 
+        hasTeardown?: boolean 
+    } = {},
 ): IModule {
     return {
         name,
@@ -133,8 +138,16 @@ describe('Application', () => {
             const teardownOrder: string[] = [];
             const app = new Application({
                 modules: [
-                    createModule('c', { order: setupOrder, teardownOrder, dependencies: ['b'] }),
-                    createModule('b', { order: setupOrder, teardownOrder, dependencies: ['a'] }),
+                    createModule('c', {
+                        order: setupOrder, 
+                        teardownOrder, 
+                        dependencies: ['b'], 
+                    }),
+                    createModule('b', {
+                        order: setupOrder, 
+                        teardownOrder, 
+                        dependencies: ['a'], 
+                    }),
                     createModule('a', { order: setupOrder, teardownOrder }),
                 ],
             });

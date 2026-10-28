@@ -61,7 +61,11 @@ export async function resolveExternalModules(
 
             let module: IModule;
             try {
-                module = await resolveModule(ref, { autoInstall, importFn, installFn });
+                module = await resolveModule(ref, {
+                    autoInstall, 
+                    importFn, 
+                    installFn, 
+                });
             } catch (error) {
                 if (ref.optional) {
                     continue;

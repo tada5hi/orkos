@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { 
+    describe, 
+    expect, 
+    it, 
+    vi, 
+} from 'vitest';
 import type { IContainer } from 'eldin';
 import { Application, defineModule } from '../../src';
 import type { IModule } from '../../src';

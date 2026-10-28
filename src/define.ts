@@ -5,7 +5,13 @@
  *  view the LICENSE file that was distributed with this source code.
  */
 
-import type { IModule, ModuleDefinition, ModuleFactory, ModuleFactoryDefinition, ModuleOptions } from './types.ts';
+import type { 
+    IModule, 
+    ModuleDefinition, 
+    ModuleFactory, 
+    ModuleFactoryDefinition, 
+    ModuleOptions, 
+} from './types.ts';
 
 /**
  * Create a typed module factory with default options.
