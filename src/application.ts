@@ -163,7 +163,7 @@ export class Application implements IApplication {
             this.moduleStatus.set(module.name, ModuleStatus.Pending);
 
             // Track resolved module for potential re-resolution
-            if (!this.modulesExternal.some((e) => (e.expectedName ?? e.name) === module.name)) {
+            if (this.modulesExternal.every((e) => (e.expectedName ?? e.name) !== module.name)) {
                 const ref = pending.find((r) => (r.expectedName ?? r.name) === module.name) ??
                     { name: module.name, source: 'dependency' as const };
                 this.modulesExternal.push(ref);
@@ -191,7 +191,7 @@ export class Application implements IApplication {
     }
 
     protected resolveOrder(): IModule[] {
-        const names = [...this.modules.keys()];
+        const names = this.modules.keys().toArray();
         const registered = new Set(names);
         const inDegree = new Map<string, number>();
         const adjacency = new Map<string, string[]>();
@@ -248,7 +248,7 @@ export class Application implements IApplication {
 
         if (sorted.length !== this.modules.size) {
             const remaining = names
-                .filter((name) => !sorted.some((m) => m.name === name));
+                .filter((name) => sorted.every((m) => m.name !== name));
 
             throw new ApplicationError({
                 message: `Circular module dependency detected involving: ${remaining.join(', ')}`,
