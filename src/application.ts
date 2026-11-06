@@ -60,6 +60,7 @@ export class Application implements IApplication {
                 name: module,
                 source: 'explicit',
             });
+
             return;
         }
 
@@ -69,6 +70,7 @@ export class Application implements IApplication {
                 options: module[1] as ModuleOptions,
                 source: 'explicit',
             });
+
             return;
         }
 
@@ -82,6 +84,7 @@ export class Application implements IApplication {
 
     getModuleStatus(name: string): ModuleStatus {
         const status = this.moduleStatus.get(name);
+
         if (status === undefined) {
             throw new ApplicationError({
                 message: `Module "${name}" is not registered`,
@@ -107,6 +110,7 @@ export class Application implements IApplication {
 
         for (const module of this.modulesOrdered) {
             this.moduleStatus.set(module.name, ModuleStatus.SettingUp);
+
             try {
                 await module.setup(this.container);
                 this.moduleStatus.set(module.name, ModuleStatus.Ready);
@@ -120,6 +124,7 @@ export class Application implements IApplication {
                 }
 
                 await this.teardownModules(this.modulesOrdered);
+
                 throw error;
             }
         }
@@ -140,9 +145,11 @@ export class Application implements IApplication {
             // Remove previously resolved externals so they can be re-resolved
             for (const ref of this.modulesExternal) {
                 const name = ref.expectedName ?? ref.name;
+
                 this.modules.delete(name);
                 this.moduleStatus.delete(name);
             }
+
             pending = [...this.modulesExternal, ...this.modulesPending];
         } else {
             pending = [...this.modulesPending];
@@ -163,9 +170,12 @@ export class Application implements IApplication {
             this.moduleStatus.set(module.name, ModuleStatus.Pending);
 
             // Track resolved module for potential re-resolution
-            if (!this.modulesExternal.some((e) => (e.expectedName ?? e.name) === module.name)) {
+            const isUnregistered = this.modulesExternal.every((e) => !((e.expectedName ?? e.name) === module.name));
+
+            if (isUnregistered) {
                 const ref = pending.find((r) => (r.expectedName ?? r.name) === module.name) ??
                     { name: module.name, source: 'dependency' as const };
+
                 this.modulesExternal.push(ref);
             }
         }
@@ -180,6 +190,7 @@ export class Application implements IApplication {
             }
 
             this.moduleStatus.set(module.name, ModuleStatus.TearingDown);
+
             try {
                 await module.teardown?.(this.container);
                 this.moduleStatus.set(module.name, ModuleStatus.TornDown);
@@ -191,7 +202,7 @@ export class Application implements IApplication {
     }
 
     protected resolveOrder(): IModule[] {
-        const names = [...this.modules.keys()];
+        const names = Array.from(this.modules.keys());
         const registered = new Set(names);
         const inDegree = new Map<string, number>();
         const adjacency = new Map<string, string[]>();
@@ -203,6 +214,7 @@ export class Application implements IApplication {
 
         names.forEach((name) => {
             const module = this.modules.get(name)!;
+
             if (!module.dependencies) {
                 return;
             }
@@ -231,13 +243,17 @@ export class Application implements IApplication {
         const queue: string[] = names.filter((name) => inDegree.get(name) === 0);
 
         const sorted: IModule[] = [];
+
         while (queue.length > 0) {
             const current = queue.shift()!;
+
             sorted.push(this.modules.get(current)!);
 
             const neighbors = adjacency.get(current)!;
+
             for (const neighbor of neighbors) {
                 const newDegree = inDegree.get(neighbor)! - 1;
+
                 inDegree.set(neighbor, newDegree);
 
                 if (newDegree === 0) {
@@ -248,7 +264,7 @@ export class Application implements IApplication {
 
         if (sorted.length !== this.modules.size) {
             const remaining = names
-                .filter((name) => !sorted.some((m) => m.name === name));
+                .filter((name) => sorted.every((m) => !(m.name === name)));
 
             throw new ApplicationError({
                 message: `Circular module dependency detected involving: ${remaining.join(', ')}`,
@@ -273,6 +289,7 @@ export class Application implements IApplication {
         }
 
         const target = this.modules.get(dep.name);
+
         if (!target) {
             return;
         }

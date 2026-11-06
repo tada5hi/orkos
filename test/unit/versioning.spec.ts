@@ -29,6 +29,7 @@ describe('Module Versioning', () => {
                     createModule('a', { version: '1.0.0', order }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a']);
         });
@@ -40,6 +41,7 @@ describe('Module Versioning', () => {
                     createModule('a', { order }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a']);
         });
@@ -61,6 +63,7 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
         });
@@ -76,6 +79,7 @@ describe('Module Versioning', () => {
                     createModule('a', { order }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a', 'b']);
         });
@@ -93,6 +97,7 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['db', 'auth']);
         });
@@ -101,12 +106,12 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '1.5.0' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '>=2.0.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '>=2.0.0' }] }),
                 ],
             });
+
             expect.assertions(6);
+
             try {
                 await app.setup();
             } catch (error) {
@@ -123,24 +128,23 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.3.0' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '^2.1.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '^2.1.0' }] }),
                 ],
             });
+
             await app.setup();
         });
 
         it('should throw when version exceeds ^ constraint major', async () => {
             expect.assertions(2);
+
             const app = new Application({
                 modules: [
                     createModule('db', { version: '3.0.0' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '^2.1.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '^2.1.0' }] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -153,24 +157,23 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.1.5' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '~2.1.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '~2.1.0' }] }),
                 ],
             });
+
             await app.setup();
         });
 
         it('should throw when version exceeds ~ constraint minor', async () => {
             expect.assertions(2);
+
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.2.0' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '~2.1.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '~2.1.0' }] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -183,24 +186,23 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.0.0' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '2.0.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '2.0.0' }] }),
                 ],
             });
+
             await app.setup();
         });
 
         it('should throw when version does not match exact constraint', async () => {
             expect.assertions(2);
+
             const app = new Application({
                 modules: [
                     createModule('db', { version: '2.0.1' }),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '2.0.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '2.0.0' }] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -213,12 +215,12 @@ describe('Module Versioning', () => {
             const app = new Application({
                 modules: [
                     createModule('db'),
-                    createModule('auth', {
-                        dependencies: [{ name: 'db', version: '>=1.0.0' }],
-                    }),
+                    createModule('auth', { dependencies: [{ name: 'db', version: '>=1.0.0' }] }),
                 ],
             });
+
             expect.assertions(3);
+
             try {
                 await app.setup();
             } catch (error) {
@@ -240,6 +242,7 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['auth']);
         });
@@ -255,20 +258,27 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['ldap', 'auth']);
         });
 
         it('should still validate version on optional dependency when present', async () => {
             expect.assertions(2);
+
             const app = new Application({
                 modules: [
                     createModule('ldap', { version: '1.0.0' }),
                     createModule('auth', {
-                        dependencies: [{ name: 'ldap', optional: true, version: '>=2.0.0' }],
+                        dependencies: [{
+                            name: 'ldap',
+                            optional: true,
+                            version: '>=2.0.0',
+                        }],
                     }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -290,6 +300,7 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['db', 'auth']);
         });
@@ -305,6 +316,7 @@ describe('Module Versioning', () => {
                     }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['db', 'auth']);
         });

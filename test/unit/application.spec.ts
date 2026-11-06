@@ -6,7 +6,12 @@ import type { IModule } from '../../src';
 
 function createModule(
     name: string,
-    opts: { dependencies?: string[]; order?: string[]; teardownOrder?: string[]; hasTeardown?: boolean } = {},
+    opts: {
+        dependencies?: string[];
+        order?: string[];
+        teardownOrder?: string[];
+        hasTeardown?: boolean
+    } = {},
 ): IModule {
     return {
         name,
@@ -27,6 +32,7 @@ describe('Application', () => {
         it('should add a single module via addModule()', async () => {
             const order: string[] = [];
             const app = new Application();
+
             app.addModule(createModule('a', { order }));
             await app.setup();
             expect(order).toEqual(['a']);
@@ -35,6 +41,7 @@ describe('Application', () => {
         it('should add multiple modules via addModules()', async () => {
             const order: string[] = [];
             const app = new Application();
+
             app.addModules([
                 createModule('a', { order }),
                 createModule('b', { order }),
@@ -51,6 +58,7 @@ describe('Application', () => {
                     createModule('b', { order }),
                 ],
             });
+
             await app.setup();
             expect(order).toHaveLength(2);
         });
@@ -66,6 +74,7 @@ describe('Application', () => {
                     createModule('c', { order }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
         });
@@ -78,6 +87,7 @@ describe('Application', () => {
                     createModule('a', { order }),
                 ],
             });
+
             await app.setup();
             expect(order.indexOf('a')).toBeLessThan(order.indexOf('b'));
         });
@@ -91,6 +101,7 @@ describe('Application', () => {
                     createModule('a', { order }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c']);
         });
@@ -105,6 +116,7 @@ describe('Application', () => {
                     createModule('a', { order }),
                 ],
             });
+
             await app.setup();
             expect(order).toEqual(['a', 'b', 'c', 'd']);
         });
@@ -119,6 +131,7 @@ describe('Application', () => {
                     createModule('d', { order }),
                 ],
             });
+
             await app.setup();
             expect(order.indexOf('d')).toBeLessThan(order.indexOf('b'));
             expect(order.indexOf('d')).toBeLessThan(order.indexOf('c'));
@@ -133,11 +146,20 @@ describe('Application', () => {
             const teardownOrder: string[] = [];
             const app = new Application({
                 modules: [
-                    createModule('c', { order: setupOrder, teardownOrder, dependencies: ['b'] }),
-                    createModule('b', { order: setupOrder, teardownOrder, dependencies: ['a'] }),
+                    createModule('c', {
+                        order: setupOrder,
+                        teardownOrder,
+                        dependencies: ['b'],
+                    }),
+                    createModule('b', {
+                        order: setupOrder,
+                        teardownOrder,
+                        dependencies: ['a'],
+                    }),
                     createModule('a', { order: setupOrder, teardownOrder }),
                 ],
             });
+
             await app.setup();
             await app.teardown();
             expect(teardownOrder).toEqual([...setupOrder].reverse());
@@ -152,6 +174,7 @@ describe('Application', () => {
                     createModule('c', { teardownOrder }),
                 ],
             });
+
             await app.setup();
             await app.teardown();
             expect(teardownOrder).toEqual(['c', 'a']);
@@ -160,6 +183,7 @@ describe('Application', () => {
         it('should pass the same container to teardown()', async () => {
             let teardownContainer: IContainer | undefined;
             const app = new Application();
+
             app.addModule({
                 name: 'a',
                 async setup() { /* noop */ },
@@ -176,12 +200,14 @@ describe('Application', () => {
     describe('circular dependency detection', () => {
         it('should throw ApplicationError for two modules depending on each other', async () => {
             expect.assertions(2);
+
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['b'] }),
                     createModule('b', { dependencies: ['a'] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -192,6 +218,7 @@ describe('Application', () => {
 
         it('should throw ApplicationError for a three-way cycle', async () => {
             expect.assertions(2);
+
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['c'] }),
@@ -199,6 +226,7 @@ describe('Application', () => {
                     createModule('c', { dependencies: ['b'] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -209,12 +237,14 @@ describe('Application', () => {
 
         it('should include module names in the error message', async () => {
             expect.assertions(3);
+
             const app = new Application({
                 modules: [
                     createModule('x', { dependencies: ['y'] }),
                     createModule('y', { dependencies: ['x'] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -228,11 +258,13 @@ describe('Application', () => {
     describe('missing dependencies', () => {
         it('should throw for unregistered non-optional dependencies', async () => {
             expect.assertions(3);
+
             const app = new Application({
                 modules: [
                     createModule('a', { dependencies: ['nonexistent'] }),
                 ],
             });
+
             try {
                 await app.setup();
             } catch (error) {
@@ -263,11 +295,13 @@ describe('Application', () => {
                     },
                 ],
             });
+
             await app.setup();
         });
 
         it('should expose container after construction', () => {
             const app = new Application();
+
             expect(app.container).toBeDefined();
         });
     });

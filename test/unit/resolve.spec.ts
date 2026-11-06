@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import {
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import { Container } from 'eldin';
 import { Application, ApplicationError, ApplicationErrorCode } from '../../src';
 import { resolveExternalModules } from '../../src/resolve.ts';
@@ -17,6 +22,7 @@ function createMockImportFn(packages: Record<string, unknown>) {
         if (name in packages) {
             return packages[name];
         }
+
         throw new Error(`Cannot find module '${name}'`);
     };
 }
@@ -25,9 +31,7 @@ describe('resolveExternalModules', () => {
     describe('basic resolution', () => {
         it('should resolve a package with a factory default export', async () => {
             const module = createMockModule('redis');
-            const importFn = createMockImportFn({
-                redis: { default: () => module },
-            });
+            const importFn = createMockImportFn({ redis: { default: () => module } });
 
             const registered = new Map<string, IModule>();
             const resolved = await resolveExternalModules({
@@ -43,9 +47,7 @@ describe('resolveExternalModules', () => {
 
         it('should resolve a package with an IModule default export', async () => {
             const module = createMockModule('orkos-redis');
-            const importFn = createMockImportFn({
-                'orkos-redis': { default: module },
-            });
+            const importFn = createMockImportFn({ 'orkos-redis': { default: module } });
 
             const registered = new Map<string, IModule>();
             const resolved = await resolveExternalModules({
@@ -60,12 +62,14 @@ describe('resolveExternalModules', () => {
 
         it('should pass options to a factory default export', async () => {
             const factory = vi.fn(() => createMockModule('redis'));
-            const importFn = createMockImportFn({
-                redis: { default: factory },
-            });
+            const importFn = createMockImportFn({ redis: { default: factory } });
 
             await resolveExternalModules({
-                pending: [{ name: 'redis', options: { host: '10.0.0.1' }, source: 'explicit' }],
+                pending: [{
+                    name: 'redis',
+                    options: { host: '10.0.0.1' },
+                    source: 'explicit',
+                }],
                 registered: new Map(),
                 importFn,
             });
@@ -76,6 +80,7 @@ describe('resolveExternalModules', () => {
         it('should skip already-registered modules', async () => {
             const importFn = vi.fn();
             const registered = new Map<string, IModule>();
+
             registered.set('redis', createMockModule('redis'));
 
             const resolved = await resolveExternalModules({
@@ -92,6 +97,7 @@ describe('resolveExternalModules', () => {
     describe('error handling', () => {
         it('should throw MODULE_NOT_FOUND when import fails', async () => {
             expect.assertions(3);
+
             const importFn = createMockImportFn({});
 
             try {
@@ -109,11 +115,16 @@ describe('resolveExternalModules', () => {
 
         it('should include referencedBy in MODULE_NOT_FOUND error', async () => {
             expect.assertions(1);
+
             const importFn = createMockImportFn({});
 
             try {
                 await resolveExternalModules({
-                    pending: [{ name: 'missing', source: 'dependency', referencedBy: 'auth' }],
+                    pending: [{
+                        name: 'missing',
+                        source: 'dependency',
+                        referencedBy: 'auth',
+                    }],
                     registered: new Map(),
                     importFn,
                 });
@@ -124,9 +135,8 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when no default export', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({
-                'bad-package': { namedExport: 'hello' },
-            });
+
+            const importFn = createMockImportFn({ 'bad-package': { namedExport: 'hello' } });
 
             try {
                 await resolveExternalModules({
@@ -142,9 +152,8 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when default export is invalid', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({
-                'bad-package': { default: 42 },
-            });
+
+            const importFn = createMockImportFn({ 'bad-package': { default: 42 } });
 
             try {
                 await resolveExternalModules({
@@ -160,13 +169,16 @@ describe('resolveExternalModules', () => {
 
         it('should throw OPTIONS_NOT_SUPPORTED when options passed to IModule export', async () => {
             expect.assertions(1);
-            const importFn = createMockImportFn({
-                redis: { default: createMockModule('redis') },
-            });
+
+            const importFn = createMockImportFn({ redis: { default: createMockModule('redis') } });
 
             try {
                 await resolveExternalModules({
-                    pending: [{ name: 'redis', options: { host: 'localhost' }, source: 'explicit' }],
+                    pending: [{
+                        name: 'redis',
+                        options: { host: 'localhost' },
+                        source: 'explicit',
+                    }],
                     registered: new Map(),
                     importFn,
                 });
@@ -177,9 +189,8 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when module name does not match package name', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({
-                'orkos-redis': { default: createMockModule('redis') },
-            });
+
+            const importFn = createMockImportFn({ 'orkos-redis': { default: createMockModule('redis') } });
 
             try {
                 await resolveExternalModules({
@@ -195,9 +206,8 @@ describe('resolveExternalModules', () => {
 
         it('should throw INVALID_MODULE_EXPORT when factory returns invalid result', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({
-                broken: { default: () => ({ notAModule: true }) },
-            });
+
+            const importFn = createMockImportFn({ broken: { default: () => ({ notAModule: true }) } });
 
             try {
                 await resolveExternalModules({
@@ -213,9 +223,8 @@ describe('resolveExternalModules', () => {
 
         it('should validate name on factory return value', async () => {
             expect.assertions(2);
-            const importFn = createMockImportFn({
-                'pkg-a': { default: () => createMockModule('different-name') },
-            });
+
+            const importFn = createMockImportFn({ 'pkg-a': { default: () => createMockModule('different-name') } });
 
             try {
                 await resolveExternalModules({
@@ -275,11 +284,10 @@ describe('resolveExternalModules', () => {
         it('should not re-resolve already registered dependencies', async () => {
             const moduleA = createMockModule('a', ['b']);
             const moduleB = createMockModule('b');
-            const importFn = vi.fn(createMockImportFn({
-                a: { default: moduleA },
-            }));
+            const importFn = vi.fn(createMockImportFn({ a: { default: moduleA } }));
 
             const registered = new Map<string, IModule>();
+
             registered.set('b', moduleB);
 
             await resolveExternalModules({
@@ -301,6 +309,7 @@ describe('resolveExternalModules', () => {
             });
 
             const registered = new Map<string, IModule>();
+
             await resolveExternalModules({
                 pending: [{ name: 'a', source: 'explicit' }],
                 registered,
@@ -313,11 +322,10 @@ describe('resolveExternalModules', () => {
         it('should not re-import package when expectedName is already registered', async () => {
             const moduleA = createMockModule('a', [{ name: 'b', package: '@scope/b' }]);
             const moduleB = createMockModule('b');
-            const importFn = vi.fn(createMockImportFn({
-                a: { default: moduleA },
-            }));
+            const importFn = vi.fn(createMockImportFn({ a: { default: moduleA } }));
 
             const registered = new Map<string, IModule>();
+
             registered.set('b', moduleB);
 
             await resolveExternalModules({
@@ -378,12 +386,16 @@ describe('resolveExternalModules', () => {
 
         it('should throw RESOLUTION_DEPTH_EXCEEDED when depth limit reached', async () => {
             expect.assertions(1);
+
             // Create a chain deeper than maxDepth
             const modules: Record<string, unknown> = {};
+
             for (let i = 0; i < 5; i++) {
                 const dep = i < 4 ? [`mod${i + 1}`] : undefined;
+
                 modules[`mod${i}`] = { default: createMockModule(`mod${i}`, dep) };
             }
+
             const importFn = createMockImportFn(modules);
 
             try {
@@ -405,9 +417,11 @@ describe('resolveExternalModules', () => {
             let importAttempt = 0;
             const importFn = async () => {
                 importAttempt++;
+
                 if (importAttempt === 1) {
                     throw new Error('not found');
                 }
+
                 return { default: module };
             };
             const installFn = vi.fn(async () => { /* success */ });
@@ -440,8 +454,11 @@ describe('resolveExternalModules', () => {
 
         it('should throw MODULE_INSTALL_FAILED when install fails', async () => {
             expect.assertions(2);
+
             const importFn = createMockImportFn({});
-            const installFn = vi.fn(async () => { throw new Error('network error'); });
+            const installFn = vi.fn(async () => {
+                throw new Error('network error');
+            });
 
             try {
                 await resolveExternalModules({
@@ -459,6 +476,7 @@ describe('resolveExternalModules', () => {
 
         it('should throw MODULE_NOT_FOUND when import still fails after install', async () => {
             expect.assertions(1);
+
             const importFn = createMockImportFn({});
             const installFn = vi.fn(async () => { /* success but module still not found */ });
 
@@ -480,12 +498,14 @@ describe('resolveExternalModules', () => {
 describe('Application — external modules', () => {
     it('should accept tuple module input via addModule', () => {
         const app = new Application();
+
         app.addModule(['redis', { host: 'localhost' }]);
         // Verifies no throw — the module is stored as pending
     });
 
     it('should accept string module input via addModule', () => {
         const app = new Application();
+
         app.addModule('redis');
         // Verifies no throw — the module is stored as pending
     });
@@ -498,6 +518,7 @@ describe('Application — external modules', () => {
                 ['external-tuple', { port: 6379 }],
             ],
         });
+
         // internal module is immediately registered
         expect(app.getModuleStatus('internal')).toBe('pending');
     });
@@ -505,15 +526,14 @@ describe('Application — external modules', () => {
     it('should accept a custom container via constructor', () => {
         const container = new Container();
         const app = new Application({ container });
+
         expect(app.container).toBe(container);
     });
 
     describe('resolveCache option', () => {
         it('should cache resolved modules by default', async () => {
             const module = createMockModule('a');
-            const app = new Application({
-                modules: [module],
-            });
+            const app = new Application({ modules: [module] });
 
             await app.setup();
             await app.teardown();
@@ -528,6 +548,7 @@ describe('resolveExternalModules — re-resolution', () => {
         const importFn = async (name: string) => {
             if (name === 'redis') {
                 callCount++;
+
                 return {
                     default: {
                         name: 'redis',
@@ -536,6 +557,7 @@ describe('resolveExternalModules — re-resolution', () => {
                     },
                 };
             }
+
             throw new Error(`Cannot find module '${name}'`);
         };
 
@@ -548,16 +570,19 @@ describe('resolveExternalModules — re-resolution', () => {
             registered,
             importFn,
         });
+
         expect(resolved1).toHaveLength(1);
         expect(resolved1[0].version).toBe('1.0.1');
 
         // Clear and re-resolve (simulates resolveCache: false)
         registered.delete('redis');
+
         const resolved2 = await resolveExternalModules({
             pending: [...pending],
             registered,
             importFn,
         });
+
         expect(resolved2).toHaveLength(1);
         expect(resolved2[0].version).toBe('1.0.2');
         expect(callCount).toBe(2);

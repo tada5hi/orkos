@@ -30,22 +30,26 @@ describe('Module Status Tracking', () => {
     describe('getModuleStatus', () => {
         it('should return pending for a registered module before setup', () => {
             const app = new Application({ modules: [createModule('a')] });
+
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Pending);
         });
 
         it('should throw for an unregistered module name', () => {
             const app = new Application();
+
             expect(() => app.getModuleStatus('nonexistent')).toThrow(ApplicationError);
         });
 
         it('should return ready after successful setup', async () => {
             const app = new Application({ modules: [createModule('a')] });
+
             await app.setup();
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Ready);
         });
 
         it('should return torn-down after teardown', async () => {
             const app = new Application({ modules: [createModule('a')] });
+
             await app.setup();
             await app.teardown();
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.TornDown);
@@ -55,10 +59,13 @@ describe('Module Status Tracking', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { throw new Error('fail'); },
+                        setupFn: async () => {
+                            throw new Error('fail');
+                        },
                     }),
                 ],
             });
+
             await expect(app.setup()).rejects.toThrow('fail');
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Failed);
         });
@@ -72,9 +79,11 @@ describe('Module Status Tracking', () => {
                     createModule('b', { dependencies: ['a'] }),
                 ],
             });
+
             await app.setup();
 
             const status = app.getStatus();
+
             expect(status.get('a')).toBe(ModuleStatus.Ready);
             expect(status.get('b')).toBe(ModuleStatus.Ready);
         });
@@ -82,6 +91,7 @@ describe('Module Status Tracking', () => {
         it('should return a copy that does not affect internal state', async () => {
             const app = new Application({ modules: [createModule('a')] });
             const status = app.getStatus();
+
             status.set('a', ModuleStatus.Failed);
             expect(app.getModuleStatus('a')).toBe(ModuleStatus.Pending);
         });
@@ -133,16 +143,24 @@ describe('Module Status Tracking', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        teardownFn: async () => { teardowns.push('a'); },
+                        teardownFn: async () => {
+                            teardowns.push('a');
+                        },
                     }),
                     createModule('b', {
                         dependencies: ['a'],
-                        teardownFn: async () => { teardowns.push('b'); },
+                        teardownFn: async () => {
+                            teardowns.push('b');
+                        },
                     }),
                     createModule('c', {
                         dependencies: ['b'],
-                        setupFn: async () => { throw new Error('c failed'); },
-                        teardownFn: async () => { teardowns.push('c'); },
+                        setupFn: async () => {
+                            throw new Error('c failed');
+                        },
+                        teardownFn: async () => {
+                            teardowns.push('c');
+                        },
                     }),
                 ],
             });
@@ -159,16 +177,24 @@ describe('Module Status Tracking', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        teardownFn: async () => { teardowns.push('a'); },
+                        teardownFn: async () => {
+                            teardowns.push('a');
+                        },
                     }),
                     createModule('b', {
                         dependencies: ['a'],
-                        setupFn: async () => { throw new Error('b failed'); },
-                        teardownFn: async () => { teardowns.push('b'); },
+                        setupFn: async () => {
+                            throw new Error('b failed');
+                        },
+                        teardownFn: async () => {
+                            teardowns.push('b');
+                        },
                     }),
                     createModule('c', {
                         dependencies: ['b'],
-                        teardownFn: async () => { teardowns.push('c'); },
+                        teardownFn: async () => {
+                            teardowns.push('c');
+                        },
                     }),
                 ],
             });
@@ -184,7 +210,9 @@ describe('Module Status Tracking', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        teardownFn: async () => { throw new Error('teardown failed'); },
+                        teardownFn: async () => {
+                            throw new Error('teardown failed');
+                        },
                     }),
                 ],
             });
