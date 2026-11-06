@@ -1,5 +1,3 @@
-<!-- NOTE: Keep this file and all corresponding files in the .agents directory updated as the project evolves. When making architectural changes, adding new patterns, or discovering important conventions, update the relevant sections. -->
-
 # Orkos — Agent Guide
 
 Orkos is a lightweight TypeScript library for orchestrating application modules with dependency-ordered startup and shutdown. It uses Kahn's topological sort algorithm to resolve module dependencies and integrates with the `eldin` dependency injection container.
@@ -27,3 +25,11 @@ npm run lint:fix
 - **[Architecture](.agents/architecture.md)** — Orchestrator pattern, topological sort, and DI integration
 - **[Testing](.agents/testing.md)** — Vitest setup, coverage thresholds, and test conventions
 - **[Conventions](.agents/conventions.md)** — Linting, commit standards, CI/CD, and release automation
+### Writing agent docs
+
+Keep the guides factual and focused on contracts a future change could silently break.
+
+- Update an existing line when an invariant or cross-cutting rule changes. Put defect stories and verification details in the PR, and user-facing changes in the documentation site or release notes.
+- Keep subsystem detail in `.agents/topics/` and link it from the relevant guide; do not import topic files into `CLAUDE.md`.
+- Describe current behavior and cite issues or PRs, rather than local plan files or a running history of completed work.
+- `npm run lint` enforces the shared config's agent-doc size, import-budget and history checks. Preserve the critical contracts when splitting a guide.

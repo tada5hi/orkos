@@ -37,7 +37,7 @@ If a type mixes both, the presence of any complex member tips it into `*Context`
 ### Main workflow (`.github/workflows/main.yml`)
 - Triggers on push/PR to `develop`, `master`, `next`, `beta`, `alpha`
 - Parallel jobs after install: **build**, **lint**, **test**
-- Node 22, caches `node_modules` and `dist/`
+- the contributor Node version in AGENTS.md, caches `node_modules` and `dist/`
 
 ### Release workflow (`.github/workflows/release.yml`)
 - Triggers on push to `master`
