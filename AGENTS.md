@@ -21,6 +21,8 @@ npm run lint:fix
 
 ## Detailed Guides
 
+
+AGENTS.md is the loaded entry point and the guide index. Read the linked guides when working on their topics.
 - **[Project Structure](.agents/structure.md)** — Source layout and module responsibilities
 - **[Architecture](.agents/architecture.md)** — Orchestrator pattern, topological sort, and DI integration
 - **[Testing](.agents/testing.md)** — Vitest setup, coverage thresholds, and test conventions
