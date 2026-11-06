@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import {
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import type { IContainer } from 'eldin';
 import { Application, defineModule } from '../../src';
 import type { IModule } from '../../src';
@@ -17,6 +22,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateModule());
             await app.setup();
 
@@ -35,6 +41,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateModule({ driver: 'redis' }));
             await app.setup();
 
@@ -53,6 +60,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateModule(false));
             await app.setup();
 
@@ -80,6 +88,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateB());
             app.addModule(CreateA());
             await app.setup();
@@ -100,6 +109,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateModule({ ttl: 600 }));
             await app.setup();
             await app.teardown();
@@ -115,6 +125,7 @@ describe('defineModule', () => {
             });
 
             const mod = CreateModule();
+
             expect(mod.teardown).toBeUndefined();
         });
 
@@ -134,6 +145,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateModule());
             await app.setup();
             await app.teardown();
@@ -151,6 +163,7 @@ describe('defineModule', () => {
             });
 
             const mod = CreateModule(false);
+
             expect(mod.dependencies).toBeUndefined();
         });
     });
@@ -175,6 +188,7 @@ describe('defineModule', () => {
             });
 
             const app = new Application();
+
             app.addModule(CreateCache());
             await app.setup();
 
@@ -188,11 +202,14 @@ describe('defineModule', () => {
                 defaults: { driver: 'memory', ttl: 3600 },
                 factory: (options) => ({
                     name: 'cache',
-                    async setup() { setupFn(options); },
+                    async setup() {
+                        setupFn(options);
+                    },
                 }),
             });
 
             const app = new Application();
+
             app.addModule(CreateModule({ driver: 'redis' }));
             await app.setup();
 
@@ -206,11 +223,14 @@ describe('defineModule', () => {
                 defaults: { ttl: 3600 },
                 factory: (options) => ({
                     name: 'cache',
-                    async setup() { setupFn(options); },
+                    async setup() {
+                        setupFn(options);
+                    },
                 }),
             });
 
             const app = new Application();
+
             app.addModule(CreateModule(false));
             await app.setup();
 
@@ -225,12 +245,17 @@ describe('defineModule', () => {
                 factory: (options) => ({
                     name: 'test',
                     dependencies: ['other'],
-                    async setup() { order.push(options.label); },
-                    async teardown() { order.push(`teardown:${options.label}`); },
+                    async setup() {
+                        order.push(options.label);
+                    },
+                    async teardown() {
+                        order.push(`teardown:${options.label}`);
+                    },
                 }),
             });
 
             const mod = CreateModule();
+
             expect(mod.name).toBe('test');
             expect(mod.dependencies).toEqual(['other']);
         });

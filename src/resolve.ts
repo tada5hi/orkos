@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-error-is-error -- Keep compatibility with the published Node.js runtime requirement. */
 /*
  * Copyright (c) 2026.
  *  Author Peter Placzek (tada5hi)
@@ -53,6 +54,7 @@ export async function resolveExternalModules(
 
         for (const ref of currentPending) {
             const expectedName = ref.expectedName ?? ref.name;
+
             if (registered.has(expectedName) || attempted.has(ref.name)) {
                 continue;
             }
@@ -60,12 +62,18 @@ export async function resolveExternalModules(
             attempted.add(ref.name);
 
             let module: IModule;
+
             try {
-                module = await resolveModule(ref, { autoInstall, importFn, installFn });
+                module = await resolveModule(ref, {
+                    autoInstall,
+                    importFn,
+                    installFn,
+                });
             } catch (error) {
                 if (ref.optional) {
                     continue;
                 }
+
                 throw error;
             }
 
@@ -113,6 +121,7 @@ async function resolveModule(
     } catch {
         if (options.autoInstall) {
             await tryInstallPackage(ref.name, options.installFn);
+
             try {
                 imported = await options.importFn(ref.name);
             } catch {
@@ -124,6 +133,7 @@ async function resolveModule(
     }
 
     const moduleExport = extractDefaultExport(imported, ref.name);
+
     return instantiateModule(moduleExport, ref);
 }
 
@@ -157,6 +167,7 @@ function instantiateModule(moduleExport: unknown, ref: ExternalModuleReference):
         }
 
         validateModuleName(result, ref);
+
         return result;
     }
 
@@ -170,6 +181,7 @@ function instantiateModule(moduleExport: unknown, ref: ExternalModuleReference):
         }
 
         validateModuleName(moduleExport, ref);
+
         return moduleExport;
     }
 
@@ -181,6 +193,7 @@ function instantiateModule(moduleExport: unknown, ref: ExternalModuleReference):
 
 function validateModuleName(module: IModule, ref: ExternalModuleReference): void {
     const expected = ref.expectedName ?? ref.name;
+
     if (module.name !== expected) {
         throw new ApplicationError({
             message: `Package "${ref.name}" exported module named "${module.name}", expected "${expected}"`,
@@ -208,7 +221,7 @@ async function tryInstallPackage(
         await installFn(name);
     } catch (error) {
         throw new ApplicationError({
-            message: `Failed to install "${name}": ${error instanceof Error ? error.message : String(error)}`,
+            message: `Failed to install "${name}": ${(error instanceof Error) ? error.message : String(error)}`,
             code: ApplicationErrorCode.MODULE_INSTALL_FAILED,
         });
     }
@@ -231,6 +244,7 @@ function normalizeDependency(dep: string | ModuleDependency): ModuleDependency {
     if (typeof dep === 'string') {
         return { name: dep };
     }
+
     return dep;
 }
 

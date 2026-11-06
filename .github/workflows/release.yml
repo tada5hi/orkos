@@ -13,7 +13,7 @@ permissions:
     id-token: write
 
 env:
-    PRIMARY_NODE_VERSION: 22
+    PRIMARY_NODE_VERSION: 24
 
 jobs:
     release:
@@ -43,4 +43,4 @@ jobs:
 
             - name: Publish
               if: steps.release.outputs.releases_created == 'true'
-              uses: tada5hi/monoship@v2
+              uses: tada5hi/monoship@v2.2.1

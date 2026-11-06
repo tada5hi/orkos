@@ -11,6 +11,7 @@ import type { ModuleStatus } from './constants.ts';
 /**
  * Describes a dependency on another module with optional version and optionality constraints.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface ModuleDependency {
     /**
      * Name of the required module.
@@ -91,6 +92,7 @@ export type ModuleInput = IModule | string | [string, ModuleOptions];
 /**
  * Options passed to {@link Application.setup}.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface SetupOptions {
     /**
      * When `false`, forces re-resolution of external modules even if previously resolved.
@@ -102,6 +104,7 @@ export interface SetupOptions {
 /**
  * Configuration for the {@link Application} constructor.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface ApplicationContext {
     /**
      * Modules to register on construction.
@@ -177,6 +180,7 @@ export type ModuleOptions = Record<string, unknown>;
  * Inline module definition used with {@link defineModule}. Lifecycle methods receive
  * the merged options object as their first argument.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface ModuleDefinition<T extends ModuleOptions> {
     name: string;
     dependencies?: (string | ModuleDependency)[];
@@ -197,6 +201,7 @@ export interface ModuleDefinition<T extends ModuleOptions> {
  * Factory-based module definition used with {@link defineModule}. Wraps an existing
  * {@link IModule} implementation with typed options and defaults.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface ModuleFactoryDefinition<T extends ModuleOptions> {
     defaults?: T;
     factory: (options: T) => IModule;
@@ -207,6 +212,7 @@ export type ModuleFactory<T extends ModuleOptions> = (overrides?: Partial<T> | f
 /**
  * Internal representation of an external module reference awaiting resolution.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface ExternalModuleReference {
     /**
      * The npm package name to resolve.
@@ -238,6 +244,7 @@ export interface ExternalModuleReference {
 /**
  * Context for the external module resolver.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Preserve the public name and declaration merging.
 export interface ResolveExternalModulesContext {
     /**
      * External module references to resolve.

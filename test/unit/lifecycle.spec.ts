@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import {
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import type { IContainer } from 'eldin';
 import { Application } from '../../src';
 import type { IModule } from '../../src';
@@ -32,13 +37,21 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { events.push('setup:a'); },
-                        onReady: async () => { events.push('ready:a'); },
+                        setupFn: async () => {
+                            events.push('setup:a');
+                        },
+                        onReady: async () => {
+                            events.push('ready:a');
+                        },
                     }),
                     createModule('b', {
                         dependencies: ['a'],
-                        setupFn: async () => { events.push('setup:b'); },
-                        onReady: async () => { events.push('ready:b'); },
+                        setupFn: async () => {
+                            events.push('setup:b');
+                        },
+                        onReady: async () => {
+                            events.push('ready:b');
+                        },
                     }),
                 ],
             });
@@ -58,7 +71,9 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        onReady: async (container) => { readyContainer = container; },
+                        onReady: async (container) => {
+                            readyContainer = container;
+                        },
                     }),
                 ],
             });
@@ -72,11 +87,17 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { events.push('setup:a'); },
+                        setupFn: async () => {
+                            events.push('setup:a');
+                        },
                     }),
                     createModule('b', {
-                        setupFn: async () => { events.push('setup:b'); },
-                        onReady: async () => { events.push('ready:b'); },
+                        setupFn: async () => {
+                            events.push('setup:b');
+                        },
+                        onReady: async () => {
+                            events.push('ready:b');
+                        },
                     }),
                 ],
             });
@@ -93,7 +114,9 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { throw error; },
+                        setupFn: async () => {
+                            throw error;
+                        },
                         onError,
                     }),
                 ],
@@ -108,7 +131,9 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { throw new Error('fail'); },
+                        setupFn: async () => {
+                            throw new Error('fail');
+                        },
                         onReady,
                     }),
                 ],
@@ -126,7 +151,9 @@ describe('Lifecycle Hooks', () => {
                     createModule('a', { onError: onErrorA }),
                     createModule('b', {
                         dependencies: ['a'],
-                        setupFn: async () => { throw new Error('b failed'); },
+                        setupFn: async () => {
+                            throw new Error('b failed');
+                        },
                         onError: onErrorB,
                     }),
                 ],
@@ -142,7 +169,9 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { throw error; },
+                        setupFn: async () => {
+                            throw error;
+                        },
                         onError: async () => { /* swallow */ },
                     }),
                 ],
@@ -156,8 +185,12 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { throw original; },
-                        onError: async () => { throw new Error('handler broke'); },
+                        setupFn: async () => {
+                            throw original;
+                        },
+                        onError: async () => {
+                            throw new Error('handler broke');
+                        },
                     }),
                 ],
             });
@@ -169,7 +202,9 @@ describe('Lifecycle Hooks', () => {
             const app = new Application({
                 modules: [
                     createModule('a', {
-                        setupFn: async () => { throw new Error('no handler'); },
+                        setupFn: async () => {
+                            throw new Error('no handler');
+                        },
                     }),
                 ],
             });
@@ -183,20 +218,32 @@ describe('Lifecycle Hooks', () => {
                 modules: [
                     {
                         name: 'a',
-                        async setup() { events.push('setup:a'); },
-                        async teardown() { events.push('teardown:a'); },
+                        async setup() {
+                            events.push('setup:a');
+                        },
+                        async teardown() {
+                            events.push('teardown:a');
+                        },
                     },
                     {
                         name: 'b',
                         dependencies: ['a'],
-                        async setup() { events.push('setup:b'); },
-                        async teardown() { events.push('teardown:b'); },
+                        async setup() {
+                            events.push('setup:b');
+                        },
+                        async teardown() {
+                            events.push('teardown:b');
+                        },
                     },
                     {
                         name: 'c',
                         dependencies: ['b'],
-                        async setup() { throw new Error('c failed'); },
-                        async teardown() { events.push('teardown:c'); },
+                        async setup() {
+                            throw new Error('c failed');
+                        },
+                        async teardown() {
+                            events.push('teardown:c');
+                        },
                     },
                 ],
             });
@@ -217,18 +264,24 @@ describe('Lifecycle Hooks', () => {
                     {
                         name: 'a',
                         async setup() { /* ok */ },
-                        async teardown() { teardowns.push('a'); },
+                        async teardown() {
+                            teardowns.push('a');
+                        },
                     },
                     {
                         name: 'b',
                         dependencies: ['a'],
                         async setup() { /* ok */ },
-                        async teardown() { throw new Error('teardown:b failed'); },
+                        async teardown() {
+                            throw new Error('teardown:b failed');
+                        },
                     },
                     {
                         name: 'c',
                         dependencies: ['b'],
-                        async setup() { throw new Error('setup:c failed'); },
+                        async setup() {
+                            throw new Error('setup:c failed');
+                        },
                     },
                 ],
             });
@@ -244,13 +297,19 @@ describe('Lifecycle Hooks', () => {
                     {
                         name: 'a',
                         async setup() { /* ok */ },
-                        async teardown() { teardowns.push('a'); },
+                        async teardown() {
+                            teardowns.push('a');
+                        },
                     },
                     {
                         name: 'b',
                         dependencies: ['a'],
-                        async setup() { throw new Error('fail'); },
-                        async teardown() { teardowns.push('b'); },
+                        async setup() {
+                            throw new Error('fail');
+                        },
+                        async teardown() {
+                            teardowns.push('b');
+                        },
                     },
                 ],
             });
