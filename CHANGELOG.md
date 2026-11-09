@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/tada5hi/orkos/compare/v1.1.1...v1.1.2) (2026-11-09)
+
+
+### Bug Fixes
+
+* **deps:** bump @antfu/install-pkg ([#49](https://github.com/tada5hi/orkos/issues/49)) ([ba7eb5f](https://github.com/tada5hi/orkos/commit/ba7eb5fd1640c5ebd5e9968a8a969d850600aa2e))
+* **deps:** bump the minorandpatch group across 1 directory with 3 updates ([#44](https://github.com/tada5hi/orkos/issues/44)) ([7741cbb](https://github.com/tada5hi/orkos/commit/7741cbbfda33830dbc4e98abc69be39f901ef643))
+
 ## [1.1.1](https://github.com/tada5hi/orkos/compare/v1.1.0...v1.1.1) (2026-04-06)
 
 
