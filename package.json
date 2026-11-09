@@ -74,7 +74,7 @@
         "access": "public"
     },
     "dependencies": {
-        "@antfu/install-pkg": "^1.1.0",
+        "@antfu/install-pkg": "^2.1.0",
         "@ebec/core": "^1.3.2"
     }
 }
